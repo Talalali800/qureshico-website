@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Carry-on-ready Canadian maple gift boxes. Pickup in Hamilton, delivery in the GTA.">
+<link rel="icon" href="qureshi-mark.svg">
+<title>Qureshi &amp; Co. Maple</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: single-column storefront; a boarding-pass hero states the carry-on promise, then boxes, steps, travel rules, FAQ, contact. */
+:root{
+  --bg:#FAF5EC; --surface:#FFFDF8; --sunk:#F1E6D3; --fg:#33210F; --muted:#6E5641;
+  --line:#E3D5BE; --accent:#B8660F; --accent-ink:#8A4A08; --on-accent:#FFFDF8; --leaf:#A8231C; --ok:#2F6B3A;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Work Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1C140C; --surface:#251A10; --sunk:#2E2114; --fg:#F4EADB; --muted:#C2AD93;
+  --line:#3F2F1F; --accent:#E39A45; --accent-ink:#F0B26A; --on-accent:#1C140C; --leaf:#E2645B; --ok:#7CC48A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1C140C; --surface:#251A10; --sunk:#2E2114; --fg:#F4EADB; --muted:#C2AD93;
+  --line:#3F2F1F; --accent:#E39A45; --accent-ink:#F0B26A; --on-accent:#1C140C; --leaf:#E2645B; --ok:#7CC48A; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;padding-inline:20px}
+.wrap{max-width:1080px;margin-inline:auto}
+h1,h2,h3{font-family:var(--display);font-weight:600;line-height:1.12;text-wrap:balance;margin:0}
+h2{font-size:clamp(28px,4vw,40px)}
+h3{font-size:22px}
+p{margin:0}
+a{color:var(--accent-ink)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:6px}
+.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;color:var(--muted)}
+section{padding-block:72px;border-top:1px solid var(--line)}
+.section-head{display:flex;flex-direction:column;gap:12px;max-width:640px;margin-bottom:36px}
+.section-head p{color:var(--muted)}
+
+/* header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-20px;padding:12px 20px}
+.bar{max-width:1080px;margin-inline:auto;display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--fg);font-family:var(--display);font-size:20px;font-weight:600}
+.brand svg{width:34px;height:34px;flex:none}
+nav{display:flex;gap:22px;margin-left:auto}
+nav a{color:var(--muted);text-decoration:none;font-size:15px;font-weight:500}
+nav a:hover{color:var(--fg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:15px;text-decoration:none;border:0;cursor:pointer;font-family:var(--body)}
+.btn:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent;color:var(--fg);border:1.5px solid var(--line)}
+.btn[aria-disabled="true"]{background:var(--sunk);color:var(--muted);cursor:default;filter:none}
+@media (max-width:760px){nav{display:none}.bar .btn{margin-left:auto}}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:56px;align-items:center;padding-block:64px 80px}
+.hero h1{font-size:clamp(36px,5.6vw,60px);font-weight:600}
+.hero h1 em{font-style:italic;font-weight:400;color:var(--accent-ink)}
+.hero-copy{display:flex;flex-direction:column;gap:22px;min-width:0}
+.hero-copy .lede{font-size:18px;color:var(--muted);max-width:520px}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.fine{font-size:14px;color:var(--muted)}
+@media (max-width:860px){.hero{grid-template-columns:1fr;gap:40px;padding-block:40px 56px}}
+
+/* boarding pass */
+.pass{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 18px 40px -24px rgba(51,33,15,.45);font-family:var(--mono);max-width:440px;width:100%;justify-self:center}
+.pass-top{background:var(--accent);color:var(--on-accent);padding:14px 22px;display:flex;justify-content:space-between;font-size:12px;letter-spacing:.12em}
+.pass-body{padding:22px;display:grid;grid-template-columns:1fr auto 1fr;gap:6px 12px;align-items:end}
+.pass-body .k{font-size:11px;letter-spacing:.12em;color:var(--muted)}
+.pass-body .v{font-family:var(--display);font-size:34px;font-weight:600;line-height:1}
+.pass-body .plane{align-self:center;color:var(--accent)}
+.pass-body .to{text-align:right}
+.pass-tear{border-top:2px dashed var(--line);margin-inline:14px;position:relative}
+.pass-checks{padding:18px 22px 22px;display:grid;gap:10px;font-size:13px}
+.pass-checks div{display:flex;justify-content:space-between;gap:12px}
+.pass-checks .yes{color:var(--ok);font-weight:500;white-space:nowrap}
+
+/* boxes */
+.boxes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+@media (max-width:900px){.boxes{grid-template-columns:1fr}}
+.box{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;min-width:0}
+.box.featured{border:2px solid var(--accent)}
+.photo{aspect-ratio:4/3;max-width:100%;background:#F3EADA;position:relative;overflow:hidden}
+.photo img{width:100%;height:100%;object-fit:cover;display:block}
+.tag{position:absolute;top:14px;left:14px;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+.tag.alt{background:var(--fg);color:var(--bg)}
+.box-body{padding:22px;display:flex;flex-direction:column;gap:14px;flex:1}
+.box-body .use{color:var(--muted);font-size:15px}
+.box ul{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:15px}
+.box li{display:flex;gap:10px}
+.box li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:10px;flex:none}
+.price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:auto;padding-top:8px;font-variant-numeric:tabular-nums}
+.price strong{font-family:var(--display);font-size:32px;font-weight:600}
+.price s{color:var(--muted)}
+.price span{font-size:14px;color:var(--muted)}
+.buy{display:flex;flex-direction:column;gap:8px}
+.carry{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--ok)}
+.carry.no{color:var(--muted)}
+
+.custom{margin-top:22px;background:var(--sunk);border-radius:16px;padding:26px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between}
+.custom > div{display:flex;flex-direction:column;gap:6px;max-width:620px;min-width:0}
+.custom p{color:var(--muted)}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;counter-reset:s}
+@media (max-width:900px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.steps{grid-template-columns:1fr}}
+.step{display:flex;flex-direction:column;gap:8px;min-width:0}
+.step .n{font-family:var(--display);font-size:40px;color:var(--accent);line-height:1}
+.step p{color:var(--muted);font-size:15px}
+.date{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--fg)}
+
+/* travel table */
+.rules{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:40px}
+@media (max-width:860px){.rules{grid-template-columns:1fr}}
+.rule-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.rule-card dl{margin:0;display:grid;gap:12px}
+.rule-card dt{font-weight:600}
+.rule-card dd{margin:0;color:var(--muted);font-size:15px}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td:first-child{font-weight:600;white-space:nowrap}
+
+/* faq */
+.faq{display:grid;gap:10px;max-width:760px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 20px}
+summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--accent);font-size:20px;line-height:1}
+details[open] summary::after{content:"–"}
+details p{margin-top:10px;color:var(--muted)}
+
+/* about + contact */
+.about{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px}
+@media (max-width:860px){.about{grid-template-columns:1fr}}
+blockquote{margin:0;font-family:var(--display);font-style:italic;font-size:clamp(22px,2.6vw,28px);line-height:1.35}
+.contact{display:grid;gap:14px}
+.contact-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.contact-row .k{width:100px;color:var(--muted);font-size:14px}
+.contact-row .v{font-weight:600;user-select:all;overflow-wrap:anywhere;min-width:0}
+.copy{margin-left:auto;font:inherit;font-size:13px;background:none;border:1px solid var(--line);color:var(--fg);border-radius:999px;padding:6px 14px;cursor:pointer;min-height:36px}
+footer{border-top:1px solid var(--line);padding-block:28px 40px;color:var(--muted);font-size:14px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+
+/* quantity + order */
+.buy{gap:10px}
+.qty{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--sunk);border-radius:12px;padding:6px 6px 6px 14px}
+.qlabel{font-size:14px;font-weight:500}
+.stepper{display:flex;align-items:center;gap:4px}
+.stepper button{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:20px;cursor:pointer;font-family:var(--body)}
+.stepper button:hover{border-color:var(--accent)}
+.stepper output{min-width:28px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.order{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:32px;align-items:start}
+@media (max-width:860px){.order{grid-template-columns:1fr}}
+.summary{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:12px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 84px)}
+@media (max-width:860px){.summary{position:static}}
+.summary ul{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:15px}
+.summary li,.totals div{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.totals{margin:0;display:grid;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.totals dd{margin:0;white-space:nowrap}
+.totals .grand{font-family:var(--display);font-size:22px;font-weight:600}
+form{display:grid;gap:18px;min-width:0}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:520px){.row2{grid-template-columns:1fr}}
+.field{display:grid;gap:6px}
+.field label,legend{font-weight:600;font-size:14px}
+input,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:8px}
+legend{margin-bottom:8px}
+.choice{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;background:var(--surface)}
+.choice:has(input:checked){border-color:var(--accent)}
+.choice:has(input:disabled){opacity:.55;cursor:not-allowed}
+.choice input{width:18px;height:18px;margin-top:3px;accent-color:var(--accent);flex:none}
+.choice > span{display:grid;gap:2px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.error{color:var(--leaf);font-weight:500}
+.done{background:var(--surface);border:2px solid var(--accent);border-radius:16px;padding:24px;display:grid;gap:10px;grid-column:2}
+@media (max-width:860px){.done{grid-column:auto}}
+.done h3{font-size:28px}
+.done b{color:var(--accent-ink)}
+@media (prefers-reduced-motion:no-preference){.btn{transition:filter .15s}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <a class="brand" href="#top" aria-label="Qureshi &amp; Co. home">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="49" fill="var(--bg)" stroke="var(--accent)" stroke-width="3"/><path d="M50 10 C50 10 24 44 24 62 A26 26 0 0 0 76 62 C76 44 50 10 50 10 Z" fill="var(--accent)"/><g transform="translate(34 48.8) scale(0.32)"><path d="M50 5 L57 20 L65 16 L62 38 L74 26 L77 33 L90 30 L85 44 L92 48 L72 62 L75 70 L54 67 L54 90 L46 90 L46 67 L25 70 L28 62 L8 48 L15 44 L10 30 L23 33 L26 26 L38 38 L35 16 L43 20 Z" fill="var(--bg)"/></g></svg>
+      Qureshi &amp; Co.
+    </a>
+    <nav aria-label="Main">
+      <a href="#boxes">Gift boxes</a>
+      <a href="#how">How it works</a>
+      <a href="#travel">Travel rules</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="btn" href="#order">My order</a>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+  <div class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Pure Canadian maple · Hamilton, Ontario</span>
+      <h1>The Canadian gift that <em>clears airport security.</em></h1>
+      <p class="lede">Maple gift boxes for families flying home. Every liquid is 100&nbsp;ml or less, factory-sealed, with bilingual labels. Pack it in your carry-on and bring Canada to the people you love.</p>
+      <div class="cta-row">
+        <a class="btn" href="#boxes">Pre-order the Carry-On Box · $42.99</a>
+        <a class="btn ghost" href="#travel">Check the travel rules</a>
+      </div>
+      <p class="fine">Early-bird price until November 15. Pickup in Hamilton from December 1.</p>
+    </div>
+
+    <div class="pass" role="img" aria-label="Boarding pass styled card: from Hamilton to home, with carry-on checks passed">
+      <div class="pass-top"><span>CARRY-ON CANADA</span><span>GATE · HOME</span></div>
+      <div class="pass-body">
+        <span class="k">FROM</span><span></span><span class="k to">TO</span>
+        <span class="v">YHM</span>
+        <svg class="plane" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h20M15 5l7 7-7 7"/></svg>
+        <span class="v to">HOME</span>
+        <span class="fine">Hamilton, ON</span><span></span><span class="fine to">Wherever family is</span>
+      </div>
+      <div class="pass-tear"></div>
+      <div class="pass-checks">
+        <div><span>Liquids ≤ 100 ml each</span><span class="yes">✓ PASS</span></div>
+        <div><span>Fits a 1 L clear bag</span><span class="yes">✓ PASS</span></div>
+        <div><span>Factory-sealed, labelled</span><span class="yes">✓ PASS</span></div>
+        <div><span>Candy &amp; sugar (solids)</span><span class="yes">✓ NO LIMIT</span></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="boxes" aria-labelledby="boxes-h">
+    <div class="section-head">
+      <span class="eyebrow">Holiday 2026 pre-orders</span>
+      <h2 id="boxes-h">Three boxes, made for giving</h2>
+      <p>Every item is made by Brien Maple Sweets in Quebec, maple makers since 1956. We curate, pack and gift-wrap each box in Hamilton.</p>
+    </div>
+
+    <div class="boxes">
+      <article class="box featured">
+        <div class="photo">
+          <span class="tag">Best for flights</span>
+          <img src="img/carry-on-box.jpg" alt="Carry-On Canada Box contents: hard maple candies, 100 ml maple-leaf syrup bottle, soft maple candies box, maple sugar jar and two lollipops" width="1200" height="900" loading="lazy">
+        </div>
+        <div class="box-body">
+          <h3>Carry-On Canada Box</h3>
+          <p class="use">Our signature gift for the trip home. Everything fits in a carry-on.</p>
+          <ul>
+            <li>Pure maple syrup, 100 ml maple-leaf bottle</li>
+            <li>Soft maple candies, 12 pieces</li>
+            <li>Hard maple candies, 90 g</li>
+            <li>Pure maple sugar, 25 g jar</li>
+            <li>2 maple lollipops</li>
+          </ul>
+          <span class="carry">✓ CARRY-ON READY</span>
+          <div class="price"><strong>$42.99</strong><s>$44.99</s><span>early bird to Nov 15</span></div>
+          <div class="buy"><div class="qty"><span class="qlabel">Carry-On Canada Box</span><div class="stepper" data-id="carryOn"><button type="button" data-step="-1" aria-label="Remove one Carry-On Canada Box">−</button><output aria-live="polite" aria-label="Carry-On Canada Box quantity">0</output><button type="button" data-step="1" aria-label="Add one Carry-On Canada Box">+</button></div></div></div>
+        </div>
+      </article>
+
+      <article class="box">
+        <div class="photo">
+          <span class="tag alt">5 for $99.99</span>
+          <img src="img/little-taste.jpg" alt="Little Taste of Canada contents: 50 ml maple-leaf syrup bottle, 5-piece soft maple candies, maple butter and a lollipop" width="1200" height="900" loading="lazy">
+        </div>
+        <div class="box-body">
+          <h3>Little Taste of Canada</h3>
+          <p class="use">A small gift for every cousin, aunt and neighbour. Buy five and save.</p>
+          <ul>
+            <li>Pure maple syrup, 50 ml maple-leaf bottle</li>
+            <li>Soft maple candies, 5 pieces</li>
+            <li>Maple butter, 45 g</li>
+            <li>1 maple lollipop</li>
+          </ul>
+          <span class="carry">✓ CARRY-ON READY · up to 4 boxes per traveller</span>
+          <div class="price"><strong>$22.99</strong><span>each · or 5 for $99.99</span></div>
+          <div class="buy"><div class="qty"><span class="qlabel">Single box</span><div class="stepper" data-id="littleTaste"><button type="button" data-step="-1" aria-label="Remove one Single box">−</button><output aria-live="polite" aria-label="Single box quantity">0</output><button type="button" data-step="1" aria-label="Add one Single box">+</button></div></div><div class="qty"><span class="qlabel">5-pack · $99.99</span><div class="stepper" data-id="littleTaste5"><button type="button" data-step="-1" aria-label="Remove one 5-pack">−</button><output aria-live="polite" aria-label="5-pack quantity">0</output><button type="button" data-step="1" aria-label="Add one 5-pack">+</button></div></div></div>
+        </div>
+      </article>
+
+      <article class="box">
+        <div class="photo">
+          <span class="tag alt">For hosting</span>
+          <img src="img/host-gift.jpg" alt="The Host Gift contents: Aleppo pepper maple jelly, maple jelly, maple caramel popcorn and soft maple candies" width="1200" height="900" loading="lazy">
+        </div>
+        <div class="box-body">
+          <h3>The Host Gift</h3>
+          <p class="use">For dinners, Eid visits and holiday gatherings here at home.</p>
+          <ul>
+            <li>Aleppo pepper maple jelly</li>
+            <li>Maple jelly</li>
+            <li>Maple caramel popcorn with fleur de sel</li>
+            <li>Soft maple candies, 70 g bag</li>
+          </ul>
+          <span class="carry no">PACK JARS IN CHECKED BAGGAGE</span>
+          <div class="price"><strong>$39.99</strong></div>
+          <div class="buy"><div class="qty"><span class="qlabel">The Host Gift</span><div class="stepper" data-id="hostGift"><button type="button" data-step="-1" aria-label="Remove one The Host Gift">−</button><output aria-live="polite" aria-label="The Host Gift quantity">0</output><button type="button" data-step="1" aria-label="Add one The Host Gift">+</button></div></div></div>
+        </div>
+      </article>
+    </div>
+
+    <div class="custom">
+      <div>
+        <h3>Build your own box</h3>
+        <p>Choose from all 37 products in our maple range. Items are charged at regular retail, plus $6.99 for the gift box and a handwritten card. Minimum $30 of products.</p>
+      </div>
+      <a class="btn" href="custom.html">Build your own box</a>
+    </div>
+  </section>
+
+  <section id="order" aria-labelledby="order-h">
+    <div class="section-head">
+      <span class="eyebrow">Your order</span>
+      <h2 id="order-h">Place your pre-order</h2>
+      <p>You get an order number and an invoice by email as soon as you order.</p>
+    </div>
+    <div class="order">
+      <div class="summary" aria-live="polite">
+        <h3>Summary</h3>
+        <ul id="sum-lines"></ul>
+        <p id="sum-empty" class="fine">No boxes yet. Use the + buttons above to add boxes.</p>
+        <dl class="totals">
+          <div><dt>Subtotal</dt><dd id="sum-sub">$0.00</dd></div>
+          <div id="fee-row" hidden><dt>Card processing fee <span class="fine">(your half; we pay the other half)</span></dt><dd id="sum-fee">$0.00</dd></div>
+          <div class="grand"><dt>Total</dt><dd id="sum-total">$0.00</dd></div>
+        </dl>
+      </div>
+
+      <form id="order-form" novalidate>
+        <div class="field"><label for="f-name">Full name</label><input id="f-name" name="name" autocomplete="name" required></div>
+        <div class="row2">
+          <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="f-phone">Phone</label><input id="f-phone" name="phone" type="tel" autocomplete="tel" required></div>
+        </div>
+
+        <fieldset>
+          <legend>Pickup or delivery</legend>
+          <label class="choice"><input type="radio" name="fulfilment" value="pickup" id="f-pickup" checked><span><b>Pickup in Hamilton</b><span class="fine">Free · from December 1</span></span></label>
+          <label class="choice"><input type="radio" name="fulfilment" value="delivery" id="f-delivery"><span><b>GTA delivery</b><span class="fine" id="delivery-hint">Free on orders of $75 or more</span></span></label>
+          <div class="field" id="address-field" hidden><label for="f-address">Delivery address</label><textarea id="f-address" name="address" rows="2" autocomplete="street-address"></textarea></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Payment</legend>
+          <label class="choice"><input type="radio" name="payment" value="etransfer" id="f-etransfer" checked><span><b>Interac e-Transfer</b><span class="fine">No fee. Send the total with your order number in the message.</span></span></label>
+          <label class="choice"><input type="radio" name="payment" value="card" id="f-card"><span><b>Credit or debit card</b><span class="fine" id="card-hint">Secure checkout by Stripe. Card processing costs about 2.9% + $0.30; you pay half and we pay half.</span></span></label>
+        </fieldset>
+
+        <div class="field"><label for="f-notes">Notes <span class="fine">(optional)</span></label><textarea id="f-notes" name="notes" rows="2" placeholder="Gift message, preferred pickup day, allergies"></textarea></div>
+        <div class="hp" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" name="website" tabindex="-1" autocomplete="off"></div>
+
+        <p id="form-error" class="error" role="alert" hidden></p>
+        <button class="btn" type="submit" id="submit-btn">Place order</button>
+        <p class="fine">By ordering you agree to our cancellation policy: full refund within 48 hours, then a $10 fee.</p>
+      </form>
+
+      <div id="order-done" class="done" hidden tabindex="-1">
+        <span class="eyebrow">Order received</span>
+        <h3>Order <span id="done-number"></span></h3>
+        <p id="done-text"></p>
+        <p class="fine">We emailed your invoice with the same number. Keep it for pickup.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" aria-labelledby="how-h">
+    <div class="section-head">
+      <span class="eyebrow">How pre-orders work</span>
+      <h2 id="how-h">Order now, pick up before you fly</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><span class="date">BY NOV 15</span><h3>Pre-order online</h3><p>Pay by Interac e-Transfer or card. You get an order number and invoice by email right away.</p></div>
+      <div class="step"><span class="n">2</span><span class="date">LATE NOV</span><h3>We order fresh</h3><p>We place one order with our Quebec maple maker, sized to your pre-orders.</p></div>
+      <div class="step"><span class="n">3</span><span class="date">FROM DEC 1</span><h3>Pick up or get delivery</h3><p>Free pickup in Hamilton. GTA delivery is free on orders over $75.</p></div>
+      <div class="step"><span class="n">4</span><span class="date">YOUR FLIGHT</span><h3>Pack and fly</h3><p>Put the syrup and butter in your 1 L clear bag. Candies and sugar go anywhere.</p></div>
+    </div>
+  </section>
+
+  <section id="travel" aria-labelledby="travel-h">
+    <div class="section-head">
+      <span class="eyebrow">Before you fly</span>
+      <h2 id="travel-h">Travel rules, in plain words</h2>
+      <p>Rules change, so check the airline and destination before you travel. Here is what applies to our boxes today.</p>
+    </div>
+    <div class="rules">
+      <div class="rule-card">
+        <h3>Leaving Canada</h3>
+        <dl>
+          <dt>Syrup, butter and jelly</dt>
+          <dd>Airport security treats anything you can pour or spread as a liquid. Each container must be 100 ml or less, and all of them must fit in one 1 L clear resealable bag.</dd>
+          <dt>Candies, lollipops, popcorn</dt>
+          <dd>Solids. No limit in your carry-on.</dd>
+          <dt>Maple sugar</dt>
+          <dd>Counts as a powder. Our 25 g jar is well under the limit.</dd>
+          <dt>Checked bags</dt>
+          <dd>No liquid limit. Wrap glass in clothing.</dd>
+        </dl>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th scope="col">Arriving in</th><th scope="col">What to know</th></tr></thead>
+          <tbody>
+            <tr><td>United States</td><td>Sealed foods are generally allowed. Declare them at the border.</td></tr>
+            <tr><td>United Kingdom</td><td>Syrup and sweets are allowed. Meat and dairy products are not.</td></tr>
+            <tr><td>India</td><td>Gifts count toward your duty-free allowance. A gift box is well within it.</td></tr>
+            <tr><td>Pakistan</td><td>Personal gifts are fine. Avoid amounts that look like goods for resale.</td></tr>
+            <tr><td>UAE</td><td>Bring factory-sealed, labelled food only. Home-made food is not allowed.</td></tr>
+            <tr><td>Philippines</td><td>Packaged pasalubong is welcome. Keep the original labels visible.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" aria-labelledby="faq-h">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2 id="faq-h">Good to know</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Is it real maple syrup?</summary><p>Yes. The syrup is 100% pure Canadian maple syrup, Canada Grade A. The only ingredient is maple syrup.</p></details>
+      <details><summary>Can you send a box somewhere else?</summary><p>Our standard options are free pickup in Hamilton and delivery across the GTA. If you need something different, such as shipping within Canada or abroad, a bulk order or a special date, contact us. We will work out the best option for you and quote it before you pay.</p></details>
+      <details><summary>When can I pick up my order?</summary><p>From December 1. We will email you the pickup address and available times after you order.</p></details>
+      <details><summary>Can I change or cancel a pre-order?</summary><p>Yes. Cancel within 48 hours of placing your order for a full refund. After 48 hours, we refund your order minus a $10 cancellation fee. To change or cancel, email or call us with your order number.</p></details>
+      <details><summary>How many boxes can I take in one carry-on?</summary><p>Every liquid in our boxes is 100 ml or less, but they all share your one 1 L clear bag. One Carry-On Box or up to four Little Taste boxes fit comfortably. Put the rest in your checked bag.</p></details>
+    </div>
+  </section>
+
+  <section id="about" aria-labelledby="about-h">
+    <div class="about">
+      <div class="section-head" style="margin-bottom:0">
+        <span class="eyebrow">About us</span>
+        <h2 id="about-h">A small Hamilton business</h2>
+        <p>Qureshi &amp; Co. curates Canadian maple gifts for families who carry a piece of home wherever they go. We source from an established Quebec maple maker and pack every box by hand.</p>
+      </div>
+      <blockquote>“We treat every order as a trust: sourcing pure, high-quality food, dealing honestly and fairly, and keeping our word.”</blockquote>
+    </div>
+  </section>
+
+  <section id="contact" aria-labelledby="contact-h">
+    <div class="section-head">
+      <span class="eyebrow">Contact</span>
+      <h2 id="contact-h">Questions, custom boxes, bulk orders</h2>
+      <p>Message us and we usually reply the same day.</p>
+    </div>
+    <div class="contact">
+      <div class="contact-row"><span class="k">Email</span><span class="v" id="email">contact@thequreshico.ca</span><button class="copy" type="button" data-copy="email">Copy</button></div>
+      <div class="contact-row"><span class="k">Phone</span><span class="v" id="phone">437-992-7691</span><button class="copy" type="button" data-copy="phone">Copy</button></div>
+      <div class="contact-row"><span class="k">Instagram</span><a class="v" href="https://www.instagram.com/thequreshico/">@thequreshico</a></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>© 2026 Qureshi &amp; Co. · Hamilton, Ontario</span>
+    <span>Interac e-Transfer accepted · Card payments by Stripe</span>
+  </footer>
+</main>
+
+<script>
+/* Paste the Google Apps Script web app URL here once it's deployed (see SETUP.md). */
+const ORDER_ENDPOINT = "";
+const EARLY_BIRD_ENDS = new Date("2026-11-16T00:00:00-05:00");
+const FREE_DELIVERY_MIN = 75;
+const CARD_FEE = { percent: 0.029, fixed: 0.30, customerShare: 0.5 }; /* keep in sync with the script */
+const PRODUCTS = {
+  carryOn: { name: "Carry-On Canada Box", price: 44.99, earlyBird: 42.99 },
+  littleTaste: { name: "Little Taste of Canada", price: 22.99 },
+  littleTaste5: { name: "Little Taste of Canada, 5-pack", price: 99.99 },
+  hostGift: { name: "The Host Gift", price: 39.99 }
+};
+const qty = { carryOn: 0, littleTaste: 0, littleTaste5: 0, hostGift: 0 };
+const $ = (id) => document.getElementById(id);
+const money = (n) => "$" + n.toFixed(2);
+const round2 = (n) => Math.round(n * 100) / 100;
+const unitPrice = (p) => (new Date() < EARLY_BIRD_ENDS && p.earlyBird) ? p.earlyBird : p.price;
+
+function totals() {
+  let subtotal = 0; const lines = [];
+  for (const id in qty) if (qty[id] > 0) {
+    const line = round2(unitPrice(PRODUCTS[id]) * qty[id]);
+    subtotal = round2(subtotal + line); lines.push({ id, qty: qty[id], name: PRODUCTS[id].name, line });
+  }
+  const card = document.querySelector('input[name="payment"]:checked').value === "card";
+  const fee = card && subtotal > 0 ? round2((subtotal * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare) : 0;
+  return { lines, subtotal, fee, total: round2(subtotal + fee) };
+}
+
+function render() {
+  document.querySelectorAll(".stepper").forEach((st) => { st.querySelector("output").textContent = qty[st.dataset.id]; });
+  const t = totals();
+  const ul = $("sum-lines"); ul.textContent = "";
+  t.lines.forEach((l) => {
+    const li = document.createElement("li");
+    const a = document.createElement("span"); a.textContent = l.qty + " × " + l.name;
+    const b = document.createElement("span"); b.textContent = money(l.line);
+    li.append(a, b); ul.append(li);
+  });
+  $("sum-empty").hidden = t.lines.length > 0;
+  $("sum-sub").textContent = money(t.subtotal);
+  $("fee-row").hidden = t.fee === 0;
+  $("sum-fee").textContent = money(t.fee);
+  $("sum-total").textContent = money(t.total);
+  const canDeliver = t.subtotal >= FREE_DELIVERY_MIN;
+  $("f-delivery").disabled = !canDeliver;
+  if (!canDeliver && $("f-delivery").checked) $("f-pickup").checked = true;
+  $("delivery-hint").textContent = canDeliver ? "Free on your order" : "Available on orders of $75 or more (add " + money(round2(FREE_DELIVERY_MIN - t.subtotal)) + ")";
+  $("address-field").hidden = !$("f-delivery").checked;
+  const sample = t.subtotal > 0 ? t.subtotal : 50;
+  const sampleFee = round2((sample * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare);
+  $("card-hint").textContent = "Secure checkout by Stripe. Card processing costs about 2.9% + $0.30; you pay half and we pay half. On " +
+    money(sample) + " your half is " + money(sampleFee) + ".";
+}
+
+document.querySelectorAll(".stepper").forEach((st) => {
+  st.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    const id = st.dataset.id;
+    qty[id] = Math.max(0, Math.min(50, qty[id] + Number(b.dataset.step)));
+    render();
+  });
+});
+document.querySelectorAll('input[name="payment"], input[name="fulfilment"]').forEach((r) => r.addEventListener("change", render));
+
+function showError(msg) { const e = $("form-error"); e.textContent = msg; e.hidden = false; }
+
+$("order-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("form-error").hidden = true;
+  const t = totals();
+  const f = e.target;
+  if (!t.lines.length) return showError("Add at least one box using the + buttons above.");
+  if (!$("f-name").value.trim()) return showError("Please enter your name.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($("f-email").value.trim())) return showError("Please enter a valid email address.");
+  if ($("f-phone").value.replace(/\D/g, "").length < 10) return showError("Please enter a phone number we can reach you on.");
+  const fulfilment = document.querySelector('input[name="fulfilment"]:checked').value, payment = document.querySelector('input[name="payment"]:checked').value;
+  if (fulfilment === "delivery" && !$("f-address").value.trim()) return showError("Please enter your delivery address.");
+  if (!ORDER_ENDPOINT) return showError("Online ordering opens soon. Until then, message us to pre-order.");
+
+  const btn = $("submit-btn"); btn.disabled = true; btn.textContent = "Placing order…";
+  try {
+    const res = await fetch(ORDER_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ name: $("f-name").value, email: $("f-email").value, phone: $("f-phone").value, items: qty,
+        fulfilment, address: $("f-address").value, payment, notes: $("f-notes").value, website: $("f-website").value })
+    });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || "Something went wrong.");
+    if (r.payment === "card" && r.checkoutUrl) { window.location.href = r.checkoutUrl; return; }
+    $("done-number").textContent = r.orderNumber;
+    const p = $("done-text"); p.textContent = "";
+    p.append("Send ", Object.assign(document.createElement("b"), { textContent: "$" + r.total }),
+      " by Interac e-Transfer to ", Object.assign(document.createElement("b"), { textContent: r.etransferEmail }),
+      " and put ", Object.assign(document.createElement("b"), { textContent: r.orderNumber }),
+      " in the message. We hold your order for " + r.holdHours + " hours.");
+    f.hidden = true; $("order-done").hidden = false; $("order-done").focus();
+  } catch (err) {
+    showError(err.message === "Failed to fetch" ? "We could not reach our order system. Please try again, or contact us." : err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Place order";
+  }
+});
+
+if (location.hash === "#paid") {
+  $("order-form").hidden = true; $("order-done").hidden = false;
+  $("done-number").textContent = "paid";
+  $("done-text").textContent = "Thank you. Your card payment went through, and your invoice is on its way by email.";
+}
+render();
+
+document.querySelectorAll("[data-copy]").forEach(function (b) {
+  b.addEventListener("click", function () {
+    const el = document.getElementById(b.dataset.copy);
+    const done = function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1600); };
+    const fallback = function () { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; };
+    try { navigator.clipboard.writeText(el.textContent).then(done, fallback); } catch (e) { fallback(); }
+  });
+});
+</script>
+</body>
+</html>

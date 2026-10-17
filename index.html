@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Carry-on-ready Canadian maple gift boxes. Pickup in Hamilton, delivery in the GTA.">
+<meta name="description" content="Carry-on-ready Canadian maple gift boxes. Pickup in Hamilton, delivery in the GTA, shipping across Canada.">
 <link rel="icon" href="qureshi-mark.svg">
 <title>Qureshi &amp; Co. Maple</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -167,8 +167,8 @@ form{display:grid;gap:18px;min-width:0}
 @media (max-width:520px){.row2{grid-template-columns:1fr}}
 .field{display:grid;gap:6px}
 .field label,legend{font-weight:600;font-size:14px}
-input,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
-input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+input,textarea,select{font:inherit;color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
 fieldset{border:0;margin:0;padding:0;display:grid;gap:8px}
 legend{margin-bottom:8px}
 .choice{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;background:var(--surface)}
@@ -327,6 +327,7 @@ legend{margin-bottom:8px}
         <p id="sum-empty" class="fine">No boxes yet. Use the + buttons above to add boxes.</p>
         <dl class="totals">
           <div><dt>Subtotal</dt><dd id="sum-sub">$0.00</dd></div>
+          <div id="ship-row" hidden><dt>Shipping</dt><dd id="sum-ship">$0.00</dd></div>
           <div id="fee-row" hidden><dt>Card processing fee <span class="fine">(your half; we pay the other half)</span></dt><dd id="sum-fee">$0.00</dd></div>
           <div class="grand"><dt>Total</dt><dd id="sum-total">$0.00</dd></div>
         </dl>
@@ -344,6 +345,8 @@ legend{margin-bottom:8px}
           <label class="choice"><input type="radio" name="fulfilment" value="pickup" id="f-pickup" checked><span><b>Pickup in Hamilton</b><span class="fine">Free · from December 1</span></span></label>
           <label class="choice"><input type="radio" name="fulfilment" value="delivery" id="f-delivery"><span><b>GTA delivery</b><span class="fine" id="delivery-hint">Free on orders of $75 or more</span></span></label>
           <div class="field" id="address-field" hidden><label for="f-address">Delivery address</label><textarea id="f-address" name="address" rows="2" autocomplete="street-address"></textarea></div>
+          <label class="choice"><input type="radio" name="fulfilment" value="ship" id="f-ship"><span><b>Ship anywhere in Canada</b><span class="fine" id="ship-hint">Sent by Canada Post. Price shown once you enter your postal code</span></span></label>
+          <div id="ship-fields" hidden></div>
         </fieldset>
 
         <fieldset>
@@ -377,7 +380,7 @@ legend{margin-bottom:8px}
     <div class="steps">
       <div class="step"><span class="n">1</span><span class="date">BY NOV 15</span><h3>Pre-order online</h3><p>Pay by Interac e-Transfer or card. You get an order number and invoice by email right away.</p></div>
       <div class="step"><span class="n">2</span><span class="date">LATE NOV</span><h3>We order fresh</h3><p>We place one order with our Quebec maple maker, sized to your pre-orders.</p></div>
-      <div class="step"><span class="n">3</span><span class="date">FROM DEC 1</span><h3>Pick up or get delivery</h3><p>Free pickup in Hamilton. GTA delivery is free on orders over $75.</p></div>
+      <div class="step"><span class="n">3</span><span class="date">FROM DEC 1</span><h3>Pick up, get delivery or ship</h3><p>Free pickup in Hamilton. GTA delivery is free on orders over $75. We also ship anywhere in Canada.</p></div>
       <div class="step"><span class="n">4</span><span class="date">YOUR FLIGHT</span><h3>Pack and fly</h3><p>Put the syrup and butter in your 1 L clear bag. Candies and sugar go anywhere.</p></div>
     </div>
   </section>
@@ -425,7 +428,7 @@ legend{margin-bottom:8px}
     </div>
     <div class="faq">
       <details><summary>Is it real maple syrup?</summary><p>Yes. The syrup is 100% pure Canadian maple syrup, Canada Grade A. The only ingredient is maple syrup.</p></details>
-      <details><summary>Can you send a box somewhere else?</summary><p>Our standard options are free pickup in Hamilton and delivery across the GTA. If you need something different, such as shipping within Canada or abroad, a bulk order or a special date, contact us. We will work out the best option for you and quote it before you pay.</p></details>
+      <details><summary>Can you ship outside Hamilton and the GTA?</summary><p>You can pick up in Hamilton, get GTA delivery, or have it shipped anywhere in Canada by Canada Post (the price shows at checkout). For shipping abroad, a bulk order or a special date, contact us. We will work out the best option for you and quote it before you pay.</p></details>
       <details><summary>When can I pick up my order?</summary><p>From December 1. We will email you the pickup address and available times after you order.</p></details>
       <details><summary>Can I change or cancel a pre-order?</summary><p>Yes. Cancel within 48 hours of placing your order for a full refund. After 48 hours, we refund your order minus a $10 cancellation fee. To change or cancel, email or call us with your order number.</p></details>
       <details><summary>How many boxes can I take in one carry-on?</summary><p>Every liquid in our boxes is 100 ml or less, but they all share your one 1 L clear bag. One Carry-On Box or up to four Little Taste boxes fit comfortably. Put the rest in your checked bag.</p></details>
@@ -462,6 +465,7 @@ legend{margin-bottom:8px}
   </footer>
 </main>
 
+<script src="shipping.js"></script>
 <script>
 /* Paste the Google Apps Script web app URL here once it's deployed (see SETUP.md). */
 const ORDER_ENDPOINT = "https://script.google.com/macros/s/AKfycbwSexkNuWC9BNWwKU7dhjHhy_HXrUb_uUyZYdSI3K2CQxxaS3NQ8kS8iQEvQ3CSHVfwlA/exec";
@@ -475,6 +479,8 @@ const PRODUCTS = {
   hostGift: { name: "The Host Gift", price: 39.99 }
 };
 const qty = { carryOn: 0, littleTaste: 0, littleTaste5: 0, hostGift: 0 };
+Shipping.mount({ endpoint: ORDER_ENDPOINT, cart: () => ({ items: qty }),
+  hasItems: () => Object.keys(qty).some((k) => qty[k] > 0), onChange: () => render() });
 const $ = (id) => document.getElementById(id);
 const money = (n) => "$" + n.toFixed(2);
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -487,8 +493,10 @@ function totals() {
     subtotal = round2(subtotal + line); lines.push({ id, qty: qty[id], name: PRODUCTS[id].name, line });
   }
   const card = document.querySelector('input[name="payment"]:checked').value === "card";
-  const fee = card && subtotal > 0 ? round2((subtotal * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare) : 0;
-  return { lines, subtotal, fee, total: round2(subtotal + fee) };
+  const ship = Shipping.cost();
+  const base = round2(subtotal + ship);
+  const fee = card && subtotal > 0 ? round2((base * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare) : 0;
+  return { lines, subtotal, ship, fee, total: round2(base + fee) };
 }
 
 function render() {
@@ -503,6 +511,8 @@ function render() {
   });
   $("sum-empty").hidden = t.lines.length > 0;
   $("sum-sub").textContent = money(t.subtotal);
+  $("ship-row").hidden = !Shipping.active();
+  $("sum-ship").textContent = Shipping.ready() ? money(t.ship) : "Enter postal code";
   $("fee-row").hidden = t.fee === 0;
   $("sum-fee").textContent = money(t.fee);
   $("sum-total").textContent = money(t.total);
@@ -511,6 +521,7 @@ function render() {
   if (!canDeliver && $("f-delivery").checked) $("f-pickup").checked = true;
   $("delivery-hint").textContent = canDeliver ? "Free on your order" : "Available on orders of $75 or more (add " + money(round2(FREE_DELIVERY_MIN - t.subtotal)) + ")";
   $("address-field").hidden = !$("f-delivery").checked;
+  Shipping.refresh();
   const sample = t.subtotal > 0 ? t.subtotal : 50;
   const sampleFee = round2((sample * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare);
   $("card-hint").textContent = "Secure checkout by Stripe. Card processing costs about 2.9% + $0.30; you pay half and we pay half. On " +
@@ -540,6 +551,7 @@ $("order-form").addEventListener("submit", async (e) => {
   if ($("f-phone").value.replace(/\D/g, "").length < 10) return showError("Please enter a phone number we can reach you on.");
   const fulfilment = document.querySelector('input[name="fulfilment"]:checked').value, payment = document.querySelector('input[name="payment"]:checked').value;
   if (fulfilment === "delivery" && !$("f-address").value.trim()) return showError("Please enter your delivery address.");
+  if (fulfilment === "ship") { const se = Shipping.validate(); if (se) return showError(se); }
   if (!ORDER_ENDPOINT) return showError("Online ordering opens soon. Until then, message us to pre-order.");
 
   const btn = $("submit-btn"); btn.disabled = true; btn.textContent = "Placing order…";
@@ -547,8 +559,9 @@ $("order-form").addEventListener("submit", async (e) => {
     const res = await fetch(ORDER_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ name: $("f-name").value, email: $("f-email").value, phone: $("f-phone").value, items: qty,
-        fulfilment, address: $("f-address").value, payment, notes: $("f-notes").value, website: $("f-website").value })
+      body: JSON.stringify(Object.assign({ name: $("f-name").value, email: $("f-email").value, phone: $("f-phone").value, items: qty,
+        fulfilment, address: $("f-address").value, payment, notes: $("f-notes").value, website: $("f-website").value },
+        fulfilment === "ship" ? Shipping.payload() : {}))
     });
     const r = await res.json();
     if (!r.ok) throw new Error(r.error || "Something went wrong.");

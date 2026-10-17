@@ -37,8 +37,26 @@ const CONFIG = {
   // The customer pays CARD_FEE_CUSTOMER_SHARE of it (0.5 = half); you pay the rest.
   CARD_FEE_PERCENT: 0.029,
   CARD_FEE_FIXED: 0.30,
-  CARD_FEE_CUSTOMER_SHARE: 0.5
+  CARD_FEE_CUSTOMER_SHARE: 0.5,
+  // Shipping within Canada by Canada Post (live rates). Keys go in Script properties, see SETUP.md.
+  SHIP_ORIGIN_POSTAL: 'L8G4R2',                 // where parcels are sent from (never shown to customers)
+  SHIP_MARKUP: 0.01,                            // 1% added to the Canada Post price; not shown to customers
+  SHIP_FALLBACK: 16.99,                         // flat price used if Canada Post can't be reached or isn't set up yet
+  SHIP_SERVICES: ['DOM.RP', 'DOM.EP', 'DOM.XP'], // Regular Parcel, Expedited Parcel, Xpresspost
+  MAX_PARCEL_KG: 30,                            // Canada Post limit per parcel
+  MAX_QUOTES_PER_HOUR: 600                      // anti-flood for the shipping calculator
 };
+
+// Packed size of each ready-made box. ESTIMATES: weigh and measure a real packed box, then edit these.
+const SHIP_SPECS = {
+  carryOn:      { kg: 1.6, l: 30, w: 22, h: 10 },
+  littleTaste:  { kg: 0.6, l: 22, w: 15, h: 8 },
+  littleTaste5: { kg: 3.0, l: 36, w: 26, h: 16 },
+  hostGift:     { kg: 2.0, l: 30, w: 22, h: 12 }
+};
+const SHIP_GIFTBOX = { kg: 0.35, vol: 1500 };     // custom gift box and card: weight and volume (cm3). ESTIMATE
+const PROVINCES = ['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT'];
+const SERVICE_NAMES = { 'DOM.RP': 'Regular Parcel', 'DOM.EP': 'Expedited Parcel', 'DOM.XP': 'Xpresspost' };
 
 // Prices live here (not on the website) so nobody can change them in their browser.
 const PRODUCTS = {
@@ -131,6 +149,7 @@ function doPost(e) {
     return json_({ ok: false, error: 'We could not read your order. Please try again.' });
   }
   if (data.website) return json_({ ok: false, error: 'Order rejected.' }); // spam trap field
+  if (data.action === 'quote') return json_(quote_(data));
 
   let order;
   try {
@@ -190,6 +209,32 @@ function buildOrder_(d) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Please enter a valid email address.');
   if (phone.replace(/\D/g, '').length < 10) throw new Error('Please enter a phone number we can reach you on.');
 
+  const built = buildItems_(d);
+  const items = built.items;
+  const goods = built.goods;
+
+  const fulfilment = d.fulfilment === 'delivery' ? 'delivery' : (d.fulfilment === 'ship' ? 'ship' : 'pickup');
+  let address = clean_(d.address, 200);
+  if (fulfilment === 'delivery') {
+    if (goods < CONFIG.FREE_DELIVERY_MIN) throw new Error('GTA delivery is available on orders of $' + CONFIG.FREE_DELIVERY_MIN + ' or more.');
+    if (!address) throw new Error('Please enter your delivery address.');
+  }
+  if (fulfilment === 'ship') {
+    const a = shipAddress_(d);
+    address = a.text;
+    const pick = shippingOptions_(items, a.postal).filter(o => o.code === String(d.shipService))[0];
+    if (!pick) throw new Error('Please choose a shipping option.');
+    items.push({ id: 'shipping', name: 'Shipping: ' + pick.label, qty: 1, unit: pick.price, line: pick.price });
+  }
+  const subtotal = round2_(items.reduce((s, i) => s + i.line, 0));
+  const payment = d.payment === 'card' ? 'card' : 'etransfer';
+  const cardFee = payment === 'card' ? cardFee_(subtotal) : 0;
+  const total = round2_(subtotal + cardFee);
+  return { name, email, phone, notes, items, subtotal, cardFee, total, fulfilment, address, payment };
+}
+
+/** Validates the cart and prices it (products and custom box). Returns { items, goods }. */
+function buildItems_(d) {
   const earlyBird = new Date() < new Date(CONFIG.EARLY_BIRD_ENDS);
   const items = [];
   Object.keys(PRODUCTS).forEach(id => {
@@ -219,18 +264,126 @@ function buildOrder_(d) {
     items.push({ id: 'giftbox', name: 'Custom gift box and handwritten card', qty: 1, unit: CONFIG.CUSTOM_BOX_FEE, line: CONFIG.CUSTOM_BOX_FEE });
   }
   if (!items.length) throw new Error('Please add at least one item to your order.');
-  const subtotal = round2_(items.reduce((s, i) => s + i.line, 0));
+  return { items, goods: round2_(items.reduce((s, i) => s + i.line, 0)) };
+}
 
-  const fulfilment = d.fulfilment === 'delivery' ? 'delivery' : 'pickup';
-  const address = clean_(d.address, 200);
-  if (fulfilment === 'delivery') {
-    if (subtotal < CONFIG.FREE_DELIVERY_MIN) throw new Error('GTA delivery is available on orders of $' + CONFIG.FREE_DELIVERY_MIN + ' or more.');
-    if (!address) throw new Error('Please enter your delivery address.');
+// ---------------- SHIPPING (Canada Post) ----------------
+function normPostal_(v) {
+  const p = String(v || '').toUpperCase().replace(/\s+/g, '');
+  return /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z]\d[ABCEGHJ-NPRSTV-Z]\d$/.test(p) ? p : null;
+}
+
+function shipAddress_(d) {
+  const street = clean_(d.street, 120), city = clean_(d.city, 60), province = String(d.province || '').toUpperCase();
+  const postal = normPostal_(d.postal);
+  if (!street) throw new Error('Please enter your street address.');
+  if (!city) throw new Error('Please enter your city.');
+  if (PROVINCES.indexOf(province) < 0) throw new Error('Please choose your province.');
+  if (!postal) throw new Error('Please enter a valid Canadian postal code.');
+  return { postal: postal, text: street + ', ' + city + ', ' + province + ' ' + postal.slice(0, 3) + ' ' + postal.slice(3) };
+}
+
+/** Guess a catalog item's weight (g) from the size in its name, e.g. "(250 ml)", "(1 L)", "(45 g)". ESTIMATE. */
+function itemGrams_(name) {
+  const m = /\((\d+(?:\.\d+)?)\s*(ml|l|g)\)/i.exec(name);
+  if (!m) return 300;
+  let n = Number(m[1]); const u = m[2].toLowerCase();
+  if (u === 'l') n *= 1000;
+  const content = u === 'g' ? n : n * 1.3;
+  return Math.round(content * 1.1 + 90);
+}
+
+/** Works out one parcel (kg and cm) for the items in an order. Sizes of custom items are estimates. */
+function parcelFromItems_(items) {
+  let grams = 0, vol = 0, single = null, lines = 0;
+  items.forEach(i => {
+    let g, v;
+    if (SHIP_SPECS[i.id]) { const sp = SHIP_SPECS[i.id]; g = sp.kg * 1000; v = sp.l * sp.w * sp.h; if (i.qty === 1) single = sp; }
+    else if (i.id === 'giftbox') { g = SHIP_GIFTBOX.kg * 1000; v = SHIP_GIFTBOX.vol; }
+    else if (CATALOG[i.id]) { g = itemGrams_(CATALOG[i.id].name); v = Math.max(60, g * 0.9); }
+    else return;
+    lines++; grams += g * i.qty; vol += v * i.qty;
+  });
+  const kg = Math.max(0.1, Math.round(grams / 10) / 100);
+  if (kg > CONFIG.MAX_PARCEL_KG) throw new Error('This is a large order. Please contact us and we will quote shipping for you.');
+  let l, w, h;
+  if (single && lines === 1) { l = single.l; w = single.w; h = single.h; }
+  else {
+    const e = Math.cbrt(vol * 1.25);
+    l = Math.max(16, e * 1.3); w = Math.max(11, e); h = Math.max(4, e / 1.3);
   }
-  const payment = d.payment === 'card' ? 'card' : 'etransfer';
-  const cardFee = payment === 'card' ? cardFee_(subtotal) : 0;
-  const total = round2_(subtotal + cardFee);
-  return { name, email, phone, notes, items, subtotal, cardFee, total, fulfilment, address, payment };
+  const dims = [l, w, h].sort((a, b) => b - a).map(x => Math.round(x * 10) / 10);
+  return { kg: kg, l: dims[0], w: dims[1], h: dims[2] };
+}
+
+/** Prices to show a customer: live Canada Post rates plus the markup, or the flat fallback. */
+function shippingOptions_(items, postal) {
+  const parcel = parcelFromItems_(items);
+  let rates = null;
+  try { rates = canadaPostRates_(parcel, postal); } catch (err) { console.error('Canada Post: ' + err.message); }
+  const wanted = (rates || []).filter(r => CONFIG.SHIP_SERVICES.indexOf(r.code) >= 0);
+  if (!wanted.length) {
+    return [{ code: 'FLAT', label: 'Standard shipping', price: round2_(CONFIG.SHIP_FALLBACK) }];
+  }
+  return wanted.sort((a, b) => a.price - b.price).map(r => ({
+    code: r.code,
+    label: (SERVICE_NAMES[r.code] || r.name) + (r.days ? ' (about ' + r.days + ' business ' + (r.days === 1 ? 'day' : 'days') + ')' : ''),
+    price: round2_(r.price * (1 + CONFIG.SHIP_MARKUP))
+  }));
+}
+
+/** Asks Canada Post for rates. Returns null if the keys are not set up. */
+function canadaPostRates_(parcel, postal) {
+  const props = PropertiesService.getScriptProperties();
+  const user = props.getProperty('CP_API_USER'), pass = props.getProperty('CP_API_PASSWORD'), cust = props.getProperty('CP_CUSTOMER_NUMBER');
+  if (!user || !pass || !cust) return null;
+  const cache = CacheService.getScriptCache();
+  const ckey = 'cp:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,
+    [props.getProperty('CP_ENV'), postal, parcel.kg, parcel.l, parcel.w, parcel.h].join('|')));
+  const hit = cache.get(ckey);
+  if (hit) return JSON.parse(hit);
+  const prod = props.getProperty('CP_ENV') === 'prod';
+  const base = prod ? 'https://soa-gw.canadapost.ca' : 'https://ct.soa-gw.canadapost.ca';
+  const contract = props.getProperty('CP_CONTRACT_ID');
+  const type = 'application/vnd.cpc.ship.rate-v4+xml';
+  const xml = '<?xml version="1.0" encoding="UTF-8"?><mailing-scenario xmlns="http://www.canadapost.ca/ws/ship/rate-v4">' +
+    '<customer-number>' + cust + '</customer-number>' + (contract ? '<contract-id>' + contract + '</contract-id>' : '') +
+    '<parcel-characteristics><weight>' + parcel.kg.toFixed(3) + '</weight><dimensions><length>' + parcel.l + '</length><width>' + parcel.w +
+    '</width><height>' + parcel.h + '</height></dimensions></parcel-characteristics>' +
+    '<origin-postal-code>' + CONFIG.SHIP_ORIGIN_POSTAL + '</origin-postal-code>' +
+    '<destination><domestic><postal-code>' + postal + '</postal-code></domestic></destination></mailing-scenario>';
+  const res = UrlFetchApp.fetch(base + '/rs/ship/price', {
+    method: 'post', contentType: type, payload: xml, muteHttpExceptions: true,
+    headers: { Authorization: 'Basic ' + Utilities.base64Encode(user + ':' + pass), Accept: type, 'Accept-language': 'en-CA' }
+  });
+  if (res.getResponseCode() !== 200) throw new Error('HTTP ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 200));
+  const root = XmlService.parse(res.getContentText()).getRootElement();
+  const ns = root.getNamespace();
+  const out = root.getChildren('price-quote', ns).map(q => {
+    const std = q.getChild('service-standard', ns);
+    const days = std ? Number(std.getChildText('expected-transit-time', ns)) || 0 : 0;
+    return { code: q.getChildText('service-code', ns), name: q.getChildText('service-name', ns),
+      price: Number(q.getChild('price-details', ns).getChildText('due', ns)), days: days };
+  });
+  if (out.length) cache.put(ckey, JSON.stringify(out), 6 * 3600);
+  return out;
+}
+
+/** The shipping calculator on the website: returns the options for a cart and postal code. */
+function quote_(d) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const k = 'q:' + Utilities.formatDate(new Date(), 'UTC', 'yyyyMMddHH');
+    const n = Number(cache.get(k) || 0);
+    if (n >= CONFIG.MAX_QUOTES_PER_HOUR) return { ok: false, error: 'Shipping calculator is busy. Please try again shortly or contact us.' };
+    cache.put(k, String(n + 1), 3600);
+    const postal = normPostal_(d.postal);
+    if (!postal) return { ok: false, error: 'Please enter a valid Canadian postal code.' };
+    const options = shippingOptions_(buildItems_(d).items, postal);
+    return { ok: true, options: options };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
 
 /** The customer's share of the card processing fee on a given subtotal. */
@@ -247,7 +400,7 @@ function appendRow_(o) {
     o.items.map(i => i.qty + ' × ' + i.name).join('\n') + (o.cardFee ? '\nCard fee (customer half): $' + o.cardFee.toFixed(2) : ''),
     o.total,
     o.payment === 'card' ? 'Card (Stripe)' : 'Interac e-Transfer',
-    o.fulfilment === 'delivery' ? 'GTA delivery' : 'Pickup, Hamilton',
+    o.fulfilment === 'delivery' ? 'GTA delivery' : (o.fulfilment === 'ship' ? 'Canada Post shipping' : 'Pickup, Hamilton'),
     safeCell_(o.address), safeCell_(o.notes), o.invoiceUrl, ''
   ]);
 }
@@ -273,7 +426,9 @@ function invoiceHtml_(o) {
       '. Put <b>' + o.number + '</b> in the message. Unpaid orders are held for ' + CONFIG.PAYMENT_HOLD_HOURS + ' hours.';
   const where = o.fulfilment === 'delivery'
     ? 'GTA delivery to: ' + esc_(o.address)
-    : 'Pickup in ' + esc_(CONFIG.CITY) + ' from ' + esc_(CONFIG.PICKUP_FROM) + '. We will email the address and times.';
+    : (o.fulfilment === 'ship'
+      ? 'Shipped by Canada Post to: ' + esc_(o.address) + '. We will email you a tracking number when it ships.'
+      : 'Pickup in ' + esc_(CONFIG.CITY) + ' from ' + esc_(CONFIG.PICKUP_FROM) + '. We will email the address and times.');
   return '<html><head><style>' +
     'body{font-family:Helvetica,Arial,sans-serif;color:#33210F;font-size:12px;margin:36px}' +
     'h1{font-size:26px;margin:0;color:#B8660F}.muted{color:#6E5641}' +
@@ -309,7 +464,9 @@ function emailCustomer_(o, checkoutUrl) {
       '</b> and put <b>' + o.number + '</b> in the message. We hold your order for ' + CONFIG.PAYMENT_HOLD_HOURS + ' hours.</p>' +
       (o.cardError ? '<p>Our card checkout was unavailable when you ordered, so please use e-Transfer, or reply and we will send a card link.</p>' : '');
   }
-  const where = o.fulfilment === 'delivery'
+  const where = o.fulfilment === 'ship'
+    ? '<p><b>Shipping:</b> ' + esc_(o.address) + '. We will email you a tracking number when your order ships.</p>'
+    : o.fulfilment === 'delivery'
     ? '<p><b>Delivery:</b> ' + esc_(o.address) + '. We will contact you to arrange a time.</p>'
     : '<p><b>Pickup:</b> in ' + esc_(CONFIG.CITY) + ' from ' + esc_(CONFIG.PICKUP_FROM) + '. We will email the address and pickup times.</p>';
   MailApp.sendEmail({
@@ -333,7 +490,7 @@ function emailOwner_(o) {
     subject: 'New order ' + o.number + ': $' + o.total.toFixed(2) + ' (' + (o.payment === 'card' ? 'card' : 'e-Transfer') + ')',
     htmlBody: '<p><b>' + o.number + '</b> from ' + esc_(o.name) + ' (' + esc_(o.email) + ', ' + esc_(o.phone) + ')</p>' +
       '<ul>' + o.items.map(i => '<li>' + i.qty + ' × ' + esc_(i.name) + '</li>').join('') + '</ul>' +
-      '<p>Total: $' + o.total.toFixed(2) + '<br>Fulfilment: ' + (o.fulfilment === 'delivery' ? 'GTA delivery, ' + esc_(o.address) : 'Pickup') +
+      '<p>Total: $' + o.total.toFixed(2) + '<br>Fulfilment: ' + (o.fulfilment === 'delivery' ? 'GTA delivery, ' + esc_(o.address) : (o.fulfilment === 'ship' ? 'Canada Post shipping, ' + esc_(o.address) : 'Pickup')) +
       '<br>Notes: ' + (esc_(o.notes) || 'none') + '</p><p><a href="' + o.invoiceUrl + '">Invoice in Drive</a></p>',
     attachments: [o.pdf]
   });

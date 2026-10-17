@@ -35,6 +35,41 @@ Interac e-Transfer works without Stripe. To also accept cards:
    (starts `sk_live_…`; use `sk_test_…` first to try it). **Never** put this key in the website files or share it.
 3. Run the function **installStripeSync** once (marks card orders "Paid" automatically).
 
+### Shipping across Canada with Canada Post (live rates)
+
+Customers can choose **Ship anywhere in Canada**. They enter a postal code and see Canada Post prices
+(Regular Parcel, Expedited Parcel, Xpresspost). The script adds a 1% markup (`SHIP_MARKUP` in `Code.gs`) and
+recalculates the price on the server, so the website cannot change it. Customers never see the markup.
+
+**Until the Canada Post keys are added, every shipped order is charged a flat $16.99** (`SHIP_FALLBACK`),
+so ordering still works.
+
+1. Sign in to your Canada Post business account and join the **Developer Program** (canadapost-postescanada.ca → Developer Program).
+2. Copy your **API key** (a username and password pair) for the **Development** environment first.
+3. In Apps Script: **Project Settings (⚙) → Script properties → Add script property**. Add:
+
+   | Property | Value |
+   |----------|-------|
+   | `CP_API_USER` | the API key username |
+   | `CP_API_PASSWORD` | the API key password |
+   | `CP_CUSTOMER_NUMBER` | your Canada Post customer number |
+   | `CP_ENV` | `dev` while testing |
+   | `CP_CONTRACT_ID` | *(only if you have a commercial contract number)* |
+
+   These stay private inside Apps Script. Never put them in the website files or send them to anyone.
+4. Test: on the site choose "Ship anywhere in Canada", add a box and enter a postal code. You should see
+   Canada Post options. In dev mode the prices are test prices.
+5. When you are happy, create the **Production** API key, replace `CP_API_USER` and `CP_API_PASSWORD` with it, and set `CP_ENV` to `prod`.
+6. After any edit to `Code.gs`: **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**.
+
+**Box weights and sizes are estimates.** Weigh and measure each packed box, then edit `SHIP_SPECS` near the top of
+`Code.gs` (`kg` and `l`/`w`/`h` in centimetres). Custom boxes estimate each item's weight from its size, plus the gift box
+(`SHIP_GIFTBOX`). Accurate numbers mean accurate prices. Orders over 30 kg ask the customer to contact you.
+
+**Origin postal code** is `L8G4R2` (`SHIP_ORIGIN_POSTAL`). It is only used to ask Canada Post for a rate.
+
+**Outside Canada:** the site invites customers to email you for a special order.
+
 ---
 
 ## B. Put the website on your domain (GitHub Pages + IONOS)

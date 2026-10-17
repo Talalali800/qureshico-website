@@ -292,7 +292,7 @@ function invoiceHtml_(o) {
     '<div class="box"><b>Pickup or delivery</b><br>' + where + '</div>' +
     (o.notes ? '<div class="box"><b>Your notes</b><br>' + esc_(o.notes) + '</div>' : '') +
     '<p class="muted" style="margin-top:22px">Cancellation: full refund within 48 hours of ordering. After 48 hours, refunds are less a $10 cancellation fee. ' +
-    'Qureshi & Co. is not registered for GST/HST, so no GST/HST is charged. Thank you for your order.</p>' +
+    'Thank you for your order.</p>' +
     '</body></html>';
 }
 

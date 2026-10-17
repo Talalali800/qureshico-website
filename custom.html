@@ -167,8 +167,8 @@ form{display:grid;gap:18px;min-width:0}
 @media (max-width:520px){.row2{grid-template-columns:1fr}}
 .field{display:grid;gap:6px}
 .field label,legend{font-weight:600;font-size:14px}
-input,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
-input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+input,textarea,select{font:inherit;color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
 fieldset{border:0;margin:0;padding:0;display:grid;gap:8px}
 legend{margin-bottom:8px}
 .choice{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;background:var(--surface)}
@@ -242,7 +242,7 @@ legend{margin-bottom:8px}
     <span class="eyebrow">Custom gift box</span>
     <h1>Build your own box</h1>
     <p class="lede">Choose any of our maple products. Each item is charged at its regular retail price, and we pack it in a gift box with a handwritten card.</p>
-    <div class="rules-row"><span class="pill">Gift box and card: $6.99</span><span class="pill">Minimum $30 of products</span><span class="pill">Pickup in Hamilton from Dec 1</span></div>
+    <div class="rules-row"><span class="pill">Gift box and card: $6.99</span><span class="pill">Minimum $30 of products</span><span class="pill">Pickup in Hamilton from Dec 1</span><span class="pill">Ships across Canada</span></div>
   </div>
 
   <div class="toolbar" role="group" aria-label="Filter products">
@@ -272,6 +272,7 @@ legend{margin-bottom:8px}
         <dl class="totals">
           <div><dt>Products</dt><dd id="sum-sub">$0.00</dd></div>
           <div><dt>Gift box and card</dt><dd id="sum-box">$6.99</dd></div>
+          <div id="ship-row" hidden><dt>Shipping</dt><dd id="sum-ship">$0.00</dd></div>
           <div id="fee-row" hidden><dt>Card processing fee <span class="fine">(your half; we pay the other half)</span></dt><dd id="sum-fee">$0.00</dd></div>
           <div class="grand"><dt>Total</dt><dd id="sum-total">$0.00</dd></div>
         </dl>
@@ -288,6 +289,8 @@ legend{margin-bottom:8px}
           <label class="choice"><input type="radio" name="fulfilment" value="pickup" id="f-pickup" checked><span><b>Pickup in Hamilton</b><span class="fine">Free · from December 1</span></span></label>
           <label class="choice"><input type="radio" name="fulfilment" value="delivery" id="f-delivery"><span><b>GTA delivery</b><span class="fine" id="delivery-hint">Free on orders of $75 or more</span></span></label>
           <div class="field" id="address-field" hidden><label for="f-address">Delivery address</label><textarea id="f-address" name="address" rows="2" autocomplete="street-address"></textarea></div>
+          <label class="choice"><input type="radio" name="fulfilment" value="ship" id="f-ship"><span><b>Ship anywhere in Canada</b><span class="fine" id="ship-hint">Sent by Canada Post. Price shown once you enter your postal code</span></span></label>
+          <div id="ship-fields" hidden></div>
         </fieldset>
 
         <fieldset>
@@ -317,6 +320,7 @@ legend{margin-bottom:8px}
   </footer>
 </main>
 <div class="mobile-bar" aria-live="polite"><span id="bar-text">Your box is empty</span><a href="#your-box">Review box</a></div>
+<script src="shipping.js"></script>
 <script>
 /* Paste the same Google Apps Script web app URL as on the main page. */
 const ORDER_ENDPOINT = "https://script.google.com/macros/s/AKfycbwSexkNuWC9BNWwKU7dhjHhy_HXrUb_uUyZYdSI3K2CQxxaS3NQ8kS8iQEvQ3CSHVfwlA/exec";
@@ -324,6 +328,9 @@ const BOX_FEE = 6.99, BOX_MIN = 30, FREE_DELIVERY_MIN = 75;
 const CARD_FEE = { percent: 0.029, fixed: 0.30, customerShare: 0.5 };
 const CATALOG = [{"sku": "B-27051", "name": "Maple-leaf bottle, amber", "size": "50 ml", "price": 6.99, "cat": "syrup", "carry": true}, {"sku": "B-27101", "name": "Maple-leaf bottle, amber", "size": "100 ml", "price": 10.99, "cat": "syrup", "carry": true}, {"sku": "B-27241", "name": "Maple-leaf bottle, amber", "size": "250 ml", "price": 16.99, "cat": "syrup", "carry": false}, {"sku": "B-17101", "name": "Sugar shack tin, amber", "size": "100 ml", "price": 10.99, "cat": "syrup", "carry": true}, {"sku": "B-17251", "name": "Sugar shack tin, amber", "size": "250 ml", "price": 13.99, "cat": "syrup", "carry": false}, {"sku": "B-11541CAB", "name": "Classic can, amber", "size": "540 ml", "price": 10.99, "cat": "syrup", "carry": false}, {"sku": "B-14251", "name": "Dorica bottle, golden", "size": "250 ml", "price": 11.99, "cat": "syrup", "carry": false}, {"sku": "B-12252", "name": "Handle bottle, dark", "size": "250 ml", "price": 9.99, "cat": "syrup", "carry": false}, {"sku": "B-13102", "name": "Maple syrup jug, dark", "size": "100 ml", "price": 6.99, "cat": "syrup", "carry": true}, {"sku": "B-13252", "name": "Maple syrup jug, dark", "size": "250 ml", "price": 9.99, "cat": "syrup", "carry": false}, {"sku": "B-13552", "name": "Maple syrup jug, dark", "size": "500 ml", "price": 15.99, "cat": "syrup", "carry": false}, {"sku": "B-13702", "name": "Maple syrup jug, dark", "size": "1 L", "price": 25.99, "cat": "syrup", "carry": false}, {"sku": "LL-16231", "name": "Bretelles maple syrup, golden", "size": "236 ml", "price": 11.99, "cat": "syrup", "carry": false}, {"sku": "LL-16472", "name": "Bretelles maple syrup, amber", "size": "473 ml", "price": 17.99, "cat": "syrup", "carry": false}, {"sku": "LL-16473", "name": "Bretelles maple syrup, dark", "size": "473 ml", "price": 17.89, "cat": "syrup", "carry": false}, {"sku": "BD-30045", "name": "Pure maple butter", "size": "45 g", "price": 4.99, "cat": "spreads", "carry": true}, {"sku": "B-30160", "name": "Pure maple butter", "size": "160 g", "price": 8.99, "cat": "spreads", "carry": false}, {"sku": "B-30330", "name": "Pure maple butter", "size": "330 g", "price": 13.99, "cat": "spreads", "carry": false}, {"sku": "LL-30250", "name": "Bretelles maple butter", "size": "250 g", "price": 10.89, "cat": "spreads", "carry": false}, {"sku": "LL-30250BIO", "name": "Bretelles organic maple butter", "size": "250 g", "price": 10.99, "cat": "spreads", "carry": false}, {"sku": "B-35115", "name": "Maple jelly", "size": "115 ml", "price": 7.99, "cat": "spreads", "carry": false}, {"sku": "LL-35110", "name": "Aleppo pepper maple jelly", "size": "110 ml", "price": 8.99, "cat": "spreads", "carry": false}, {"sku": "LL-36250", "name": "Bretelles maple caramel", "size": "250 g", "price": 9.99, "cat": "spreads", "carry": false}, {"sku": "LL-34250", "name": "Bretelles maple taffy", "size": "250 g", "price": 10.99, "cat": "spreads", "carry": false}, {"sku": "BD-40025", "name": "Granulated maple sugar jar", "size": "25 g", "price": 4.99, "cat": "sugar", "carry": true}, {"sku": "B-40065", "name": "Granulated maple sugar shaker", "size": "65 g", "price": 6.99, "cat": "sugar", "carry": true}, {"sku": "LL-40200", "name": "Bretelles fine maple sugar", "size": "200 g", "price": 10.99, "cat": "sugar", "carry": true}, {"sku": "B-40250", "name": "Granulated maple sugar shaker", "size": "250 g", "price": 16.99, "cat": "sugar", "carry": true}, {"sku": "BD-40350", "name": "Fine maple sugar bag", "size": "350 g", "price": 14.99, "cat": "sugar", "carry": false}, {"sku": "B-55005", "name": "Soft maple candies, 5 pieces", "size": "35 g", "price": 5.99, "cat": "sweets", "carry": true}, {"sku": "B-55012", "name": "Soft maple candies, 12 pieces", "size": "84 g", "price": 11.89, "cat": "sweets", "carry": true}, {"sku": "BB-55012", "name": "Organic soft maple candies", "size": "84 g", "price": 11.99, "cat": "sweets", "carry": true}, {"sku": "LL-55010", "name": "Bretelles soft maple candies, 10 pieces", "size": "70 g", "price": 7.89, "cat": "sweets", "carry": true}, {"sku": "LL-55010BIO", "name": "Bretelles organic soft maple candies", "size": "70 g", "price": 7.99, "cat": "sweets", "carry": true}, {"sku": "B-56020", "name": "Maple lollipop", "size": "20 g", "price": 2.99, "cat": "sweets", "carry": true}, {"sku": "B-56090", "name": "Hard maple candies", "size": "90 g", "price": 6.99, "cat": "sweets", "carry": true}, {"sku": "LL-50140", "name": "Bretelles maple caramel popcorn", "size": "140 g", "price": 7.99, "cat": "sweets", "carry": true}];
 const qty = {}; CATALOG.forEach((p) => { qty[p.sku] = 0; });
+const customCart = () => { const c = {}; for (const k in qty) if (qty[k] > 0) c[k] = qty[k]; return c; };
+Shipping.mount({ endpoint: ORDER_ENDPOINT, cart: () => ({ custom: customCart() }),
+  hasItems: () => Object.keys(customCart()).length > 0 && totals().products >= BOX_MIN, onChange: () => render() });
 let filter = "all";
 const $ = (id) => document.getElementById(id);
 const money = (n) => "$" + n.toFixed(2);
@@ -377,8 +384,10 @@ function totals() {
   }});
   const subtotal = products > 0 ? round2(products + BOX_FEE) : 0;
   const card = document.querySelector('input[name="payment"]:checked').value === "card";
-  const fee = card && subtotal > 0 ? round2((subtotal * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare) : 0;
-  return { lines, products, count, subtotal, fee, total: round2(subtotal + fee) };
+  const ship = Shipping.cost();
+  const base = round2(subtotal + ship);
+  const fee = card && subtotal > 0 ? round2((base * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare) : 0;
+  return { lines, products, count, subtotal, ship, fee, total: round2(base + fee) };
 }
 
 function render() {
@@ -392,6 +401,8 @@ function render() {
   $("sum-empty").hidden = t.lines.length > 0;
   $("sum-sub").textContent = money(t.products);
   $("sum-box").textContent = t.products > 0 ? money(BOX_FEE) : "$0.00";
+  $("ship-row").hidden = !Shipping.active();
+  $("sum-ship").textContent = Shipping.ready() ? money(t.ship) : "Enter postal code";
   $("fee-row").hidden = t.fee === 0;
   $("sum-fee").textContent = money(t.fee);
   $("sum-total").textContent = money(t.total);
@@ -402,6 +413,7 @@ function render() {
   if (!canDeliver && $("f-delivery").checked) $("f-pickup").checked = true;
   $("delivery-hint").textContent = canDeliver ? "Free on your order" : "Available on orders of $75 or more";
   $("address-field").hidden = !$("f-delivery").checked;
+  Shipping.refresh();
   const sample = t.subtotal > 0 ? t.subtotal : 50;
   $("card-hint").textContent = "Secure checkout by Stripe. Card processing costs about 2.9% + $0.30; you pay half and we pay half. On " +
     money(sample) + " your half is " + money(round2((sample * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare)) + ".";
@@ -422,13 +434,15 @@ $("order-form").addEventListener("submit", async (e) => {
   const fulfilment = document.querySelector('input[name="fulfilment"]:checked').value;
   const payment = document.querySelector('input[name="payment"]:checked').value;
   if (fulfilment === "delivery" && !$("f-address").value.trim()) return showError("Please enter your delivery address.");
+  if (fulfilment === "ship") { const se = Shipping.validate(); if (se) return showError(se); }
   if (!ORDER_ENDPOINT) return showError("Online ordering opens soon. Until then, message us to order a custom box.");
   const btn = $("submit-btn"); btn.disabled = true; btn.textContent = "Placing order…";
   try {
     const custom = {}; for (const k in qty) if (qty[k] > 0) custom[k] = qty[k];
     const res = await fetch(ORDER_ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ name: $("f-name").value, email: $("f-email").value, phone: $("f-phone").value, custom,
-        fulfilment, address: $("f-address").value, payment, notes: $("f-notes").value, website: $("f-website").value }) });
+      body: JSON.stringify(Object.assign({ name: $("f-name").value, email: $("f-email").value, phone: $("f-phone").value, custom,
+        fulfilment, address: $("f-address").value, payment, notes: $("f-notes").value, website: $("f-website").value },
+        fulfilment === "ship" ? Shipping.payload() : {})) });
     const r = await res.json();
     if (!r.ok) throw new Error(r.error || "Something went wrong.");
     if (r.payment === "card" && r.checkoutUrl) { window.location.href = r.checkoutUrl; return; }

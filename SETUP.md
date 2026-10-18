@@ -108,3 +108,35 @@ check it if these ever stop working.)
 ### B3. Check
 - https://thequreshico.ca loads the store, and https://www.thequreshico.ca redirects to it.
 - Email to contact@thequreshico.ca still works.
+
+---
+
+## C. Security: what is in place and what you should keep doing
+
+**Built into the site and script**
+- HTTPS only (GitHub Pages certificate, "Enforce HTTPS" on).
+- A strict Content Security Policy on every page: only this site's own scripts and styles run, and the page may only talk to
+  Google Apps Script (orders and shipping quotes). Injected scripts, outside images and framing are blocked.
+- The page cannot be shown inside another website's frame, and it will only ever send a customer to Stripe's checkout address.
+- The order script (`Code.gs`) re-checks everything on the server: prices, shipping, quantities, product codes, address fields and
+  total. The website cannot change a price.
+- Spam and bot protection: a hidden trap field, a minimum time on the page, 3 orders per email per hour, 40 orders per hour overall.
+- All customer text is escaped before it goes into invoices and emails, and spreadsheet cells starting with `=`, `+`, `-` or `@`
+  are neutralised so they cannot run as formulas.
+- Error messages shown to visitors never include internal details. Secret keys live only in Apps Script **Script properties**.
+
+**When you change `Code.gs` or the pages**
+1. Push the website files to GitHub first, then paste the new `Code.gs` into Apps Script and publish a **New version**.
+   (The script now expects the website to send a short timing value with each order, so an old page would be refused.)
+2. Never put a Stripe key, Canada Post secret or password in any file in this repository. The repository is public.
+
+**Your accounts are the real front door. Please do all of these**
+- Turn on **2-step verification** for: your Google account (it owns the orders sheet and invoices), GitHub, Stripe, IONOS and Canada Post.
+- Use a **different, long password** on each (a password manager helps).
+- Use a Stripe **restricted key** (Checkout Sessions: Write only), never the full secret key. If a key might have leaked, delete it in Stripe and make a new one.
+- In Google Drive, keep the invoices folder and the orders sheet **private** (not "anyone with the link").
+- In GitHub, only you should be a collaborator on the repository.
+- Remove old DNS records you no longer use (for example the old `merchant` record), because forgotten records can be taken over.
+- Optional email protection: your `_dmarc` record is set to monitor only (`p=none`). Once you are sure all your email is working, ask IONOS
+  support or change it to `p=quarantine` so fake emails pretending to be you are sent to spam.
+- Check the Stripe dashboard and the orders sheet now and then for orders you do not recognise.

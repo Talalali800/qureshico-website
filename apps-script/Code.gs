@@ -43,7 +43,8 @@ const CONFIG = {
   SHIP_FALLBACK: 16.99,                         // flat price used if Canada Post can't be reached or isn't set up yet
   SHIP_SERVICES: ['DOM.RP', 'DOM.EP', 'DOM.XP'], // Regular Parcel, Expedited Parcel, Xpresspost
   MAX_PARCEL_KG: 30,                            // Canada Post limit per parcel
-  MAX_QUOTES_PER_HOUR: 600                      // anti-flood for the shipping calculator
+  MAX_QUOTES_PER_HOUR: 600,                     // anti-flood for the shipping calculator
+  MIN_FORM_MS: 3000                             // an order sent less than 3 seconds after the page opened is a bot
 };
 
 // Packed size of each ready-made box. ESTIMATES: weigh and measure a real packed box, then edit these.
@@ -147,14 +148,17 @@ function doPost(e) {
   } catch (err) {
     return json_({ ok: false, error: 'We could not read your order. Please try again.' });
   }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return json_({ ok: false, error: 'We could not read your order. Please try again.' });
   if (data.website) return json_({ ok: false, error: 'Order rejected.' }); // spam trap field
   if (data.action === 'quote') return json_(quote_(data));
+  // Real visitors need a few seconds to choose items and fill the form. Scripts that post straight to this URL do not.
+  if (!(Number(data.elapsed) >= CONFIG.MIN_FORM_MS)) return json_({ ok: false, error: 'Please review your order and try again.' });
 
   let order;
   try {
     order = buildOrder_(data);
   } catch (err) {
-    return json_({ ok: false, error: err.message });
+    return json_({ ok: false, error: userMsg_(err) });
   }
   const limited = rateLimit_(order.email);
   if (limited) return json_({ ok: false, error: limited });
@@ -226,6 +230,7 @@ function buildOrder_(d) {
     items.push({ id: 'shipping', name: 'Shipping: ' + pick.label, qty: 1, unit: pick.price, line: pick.price });
   }
   const subtotal = round2_(items.reduce((s, i) => s + i.line, 0));
+  if (!isFinite(subtotal) || subtotal <= 0) throw new Error('Please add at least one item to your order.');
   const payment = d.payment === 'card' ? 'card' : 'etransfer';
   const cardFee = payment === 'card' ? cardFee_(subtotal) : 0;
   const total = round2_(subtotal + cardFee);
@@ -249,7 +254,7 @@ function buildItems_(d) {
   let customValue = 0;
   Object.keys(d.custom || {}).forEach(sku => {
     const qty = Math.floor(Number(d.custom[sku]) || 0);
-    if (!CATALOG[sku]) return;
+    if (!has_(CATALOG, sku)) return;
     if (qty < 0 || qty > 50) throw new Error('Please choose between 0 and 50 of each product.');
     if (qty > 0) {
       const p = CATALOG[sku];
@@ -297,9 +302,9 @@ function parcelFromItems_(items) {
   let grams = 0, vol = 0, single = null, lines = 0;
   items.forEach(i => {
     let g, v;
-    if (SHIP_SPECS[i.id]) { const sp = SHIP_SPECS[i.id]; g = sp.kg * 1000; v = sp.l * sp.w * sp.h; if (i.qty === 1) single = sp; }
+    if (has_(SHIP_SPECS, i.id)) { const sp = SHIP_SPECS[i.id]; g = sp.kg * 1000; v = sp.l * sp.w * sp.h; if (i.qty === 1) single = sp; }
     else if (i.id === 'giftbox') { g = SHIP_GIFTBOX.kg * 1000; v = SHIP_GIFTBOX.vol; }
-    else if (CATALOG[i.id]) { g = itemGrams_(CATALOG[i.id].name); v = Math.max(60, g * 0.9); }
+    else if (has_(CATALOG, i.id)) { g = itemGrams_(CATALOG[i.id].name); v = Math.max(60, g * 0.9); }
     else return;
     lines++; grams += g * i.qty; vol += v * i.qty;
   });
@@ -408,7 +413,7 @@ function quote_(d) {
     const options = shippingOptions_(buildItems_(d).items, postal);
     return { ok: true, options: options };
   } catch (err) {
-    return { ok: false, error: err.message };
+    return { ok: false, error: userMsg_(err) };
   }
 }
 
@@ -604,6 +609,16 @@ function getFolder_() {
 }
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+/** True only for properties we defined ourselves (not "constructor", "__proto__" and the like). */
+function has_(obj, key) { return Object.prototype.hasOwnProperty.call(obj, key); }
+/** Message that is safe to show a visitor: our own messages pass through, internal errors are replaced. */
+function userMsg_(err) {
+  if (err instanceof TypeError || err instanceof ReferenceError || err instanceof RangeError || err instanceof SyntaxError) {
+    console.error('Unexpected error: ' + err.message);
+    return 'Something went wrong. Please try again, or contact us.';
+  }
+  return err.message;
 }
 function clean_(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max); }
 function round2_(n) { return Math.round(n * 100) / 100; }

@@ -332,39 +332,66 @@ function shippingOptions_(items, postal) {
   }));
 }
 
-/** Asks Canada Post for rates. Returns null if the keys are not set up. */
+/** Canada Post REST API (OAuth 2.0 client credentials, JSON). Addresses come from Canada Post's Rating 4.0.0 spec. */
+const CP_TOKEN_URL = 'https://api.canadapost-postescanada.ca/prod/devportal-portaildesdeveloppeurs/cpc-api-native-oauth-provider/oauth2/token';
+const CP_RATING_URL = 'https://api.canadapost-postescanada.ca/prod/devportal-portaildesdeveloppeurs/rating/v1';
+
+/** Gets an access token (cached until shortly before it expires). Returns null if the keys are not set up. */
+function cpToken_(forceNew) {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('CP_CLIENT_ID'), secret = props.getProperty('CP_CLIENT_SECRET');
+  if (!id || !secret) return null;
+  const cache = CacheService.getScriptCache();
+  if (!forceNew) { const hit = cache.get('cp_token'); if (hit) return hit; }
+  const res = UrlFetchApp.fetch(CP_TOKEN_URL, {
+    method: 'post', muteHttpExceptions: true,
+    headers: { 'X-IBM-Client-Id': id, 'X-IBM-Client-Secret': secret, accept: 'application/json' },
+    payload: 'scope=merchant&grant_type=client_credentials'
+  });
+  if (res.getResponseCode() !== 200) throw new Error('Token HTTP ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 200));
+  const t = JSON.parse(res.getContentText());
+  if (!t.access_token) throw new Error('No access token in response');
+  const ttl = Math.max(60, Math.min(21000, (Number(t.expires_in) || 3600) - 300));
+  cache.put('cp_token', t.access_token, ttl);
+  return t.access_token;
+}
+
+/** Asks Canada Post for rates. Returns null if the keys are not set up, otherwise [{ code, name, price, days }]. */
 function canadaPostRates_(parcel, postal) {
   const props = PropertiesService.getScriptProperties();
-  const user = props.getProperty('CP_API_USER'), pass = props.getProperty('CP_API_PASSWORD'), cust = props.getProperty('CP_CUSTOMER_NUMBER');
-  if (!user || !pass || !cust) return null;
+  if (!props.getProperty('CP_CLIENT_ID') || !props.getProperty('CP_CLIENT_SECRET')) return null;
   const cache = CacheService.getScriptCache();
   const ckey = 'cp:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,
-    [props.getProperty('CP_ENV'), postal, parcel.kg, parcel.l, parcel.w, parcel.h].join('|')));
+    [postal, parcel.kg, parcel.l, parcel.w, parcel.h].join('|')));
   const hit = cache.get(ckey);
   if (hit) return JSON.parse(hit);
-  const prod = props.getProperty('CP_ENV') === 'prod';
-  const base = prod ? 'https://soa-gw.canadapost.ca' : 'https://ct.soa-gw.canadapost.ca';
-  const contract = props.getProperty('CP_CONTRACT_ID');
-  const type = 'application/vnd.cpc.ship.rate-v4+xml';
-  const xml = '<?xml version="1.0" encoding="UTF-8"?><mailing-scenario xmlns="http://www.canadapost.ca/ws/ship/rate-v4">' +
-    '<customer-number>' + cust + '</customer-number>' + (contract ? '<contract-id>' + contract + '</contract-id>' : '') +
-    '<parcel-characteristics><weight>' + parcel.kg.toFixed(3) + '</weight><dimensions><length>' + parcel.l + '</length><width>' + parcel.w +
-    '</width><height>' + parcel.h + '</height></dimensions></parcel-characteristics>' +
-    '<origin-postal-code>' + CONFIG.SHIP_ORIGIN_POSTAL + '</origin-postal-code>' +
-    '<destination><domestic><postal-code>' + postal + '</postal-code></domestic></destination></mailing-scenario>';
-  const res = UrlFetchApp.fetch(base + '/rs/ship/price', {
-    method: 'post', contentType: type, payload: xml, muteHttpExceptions: true,
-    headers: { Authorization: 'Basic ' + Utilities.base64Encode(user + ':' + pass), Accept: type, 'Accept-language': 'en-CA' }
+
+  const customer = props.getProperty('CP_CUSTOMER_NUMBER'), contract = props.getProperty('CP_CONTRACT_ID');
+  const body = {
+    quoteType: customer ? 'commercial' : 'counter',   // commercial = your small-business/contract price
+    parcelCharacteristics: {
+      weight: Math.round(parcel.kg * 1000) / 1000,
+      dimensions: { length: parcel.l, width: parcel.w, height: parcel.h }
+    },
+    originPostalCode: CONFIG.SHIP_ORIGIN_POSTAL,
+    destination: { domestic: { postalCode: postal } }
+  };
+  if (customer) body.customerNumber = customer;
+  if (customer && contract) body.contractId = contract;
+
+  const call = (token) => UrlFetchApp.fetch(CP_RATING_URL + '/prices', {
+    method: 'post', muteHttpExceptions: true, contentType: 'application/json', payload: JSON.stringify(body),
+    headers: { Authorization: 'Bearer ' + token, accept: 'application/json', 'Accept-Language': 'en-CA' }
   });
-  if (res.getResponseCode() !== 200) throw new Error('HTTP ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 200));
-  const root = XmlService.parse(res.getContentText()).getRootElement();
-  const ns = root.getNamespace();
-  const out = root.getChildren('price-quote', ns).map(q => {
-    const std = q.getChild('service-standard', ns);
-    const days = std ? Number(std.getChildText('expected-transit-time', ns)) || 0 : 0;
-    return { code: q.getChildText('service-code', ns), name: q.getChildText('service-name', ns),
-      price: Number(q.getChild('price-details', ns).getChildText('due', ns)), days: days };
-  });
+  let res = call(cpToken_(false));
+  if (res.getResponseCode() === 401) res = call(cpToken_(true));   // token may have expired early
+  if (res.getResponseCode() !== 200) throw new Error('Rates HTTP ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 300));
+  const out = JSON.parse(res.getContentText()).map(q => ({
+    code: q.serviceCode,
+    name: q.serviceName,
+    price: Number(q.priceDetails && q.priceDetails.due),
+    days: Number(q.serviceStandard && q.serviceStandard.expectedTransitTime) || 0
+  })).filter(q => q.code && q.price > 0);
   if (out.length) cache.put(ckey, JSON.stringify(out), 6 * 3600);
   return out;
 }

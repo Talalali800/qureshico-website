@@ -34,10 +34,9 @@ const CONFIG = {
   FOLDER_NAME: 'Qureshi & Co. Invoices',
   TIME_ZONE: 'America/Toronto',
   // Card processing fee: Stripe charges about 2.9% + $0.30 per Canadian card payment.
-  // The customer pays CARD_FEE_CUSTOMER_SHARE of it (0.5 = half); you pay the rest.
+  // The customer pays all of it, so you receive the full order amount.
   CARD_FEE_PERCENT: 0.029,
   CARD_FEE_FIXED: 0.30,
-  CARD_FEE_CUSTOMER_SHARE: 0.5,
   // Shipping within Canada by Canada Post (live rates). Keys go in Script properties, see SETUP.md.
   SHIP_ORIGIN_POSTAL: 'L8G4R2',                 // where parcels are sent from (never shown to customers)
   SHIP_MARKUP: 0.01,                            // 1% added to the Canada Post price; not shown to customers
@@ -413,9 +412,10 @@ function quote_(d) {
   }
 }
 
-/** The customer's share of the card processing fee on a given subtotal. */
+/** Card processing fee added for the customer. Stripe takes its percentage of the whole amount charged, so this is
+ *  worked out so that the amount left after Stripe's fee equals the order amount. */
 function cardFee_(subtotal) {
-  return round2_((subtotal * CONFIG.CARD_FEE_PERCENT + CONFIG.CARD_FEE_FIXED) * CONFIG.CARD_FEE_CUSTOMER_SHARE);
+  return round2_((subtotal + CONFIG.CARD_FEE_FIXED) / (1 - CONFIG.CARD_FEE_PERCENT) - subtotal);
 }
 
 function appendRow_(o) {
@@ -424,7 +424,7 @@ function appendRow_(o) {
     Utilities.formatDate(o.date, CONFIG.TIME_ZONE, 'yyyy-MM-dd HH:mm'),
     'Awaiting payment',
     safeCell_(o.name), safeCell_(o.email), "'" + o.phone,
-    o.items.map(i => i.qty + ' × ' + i.name).join('\n') + (o.cardFee ? '\nCard fee (customer half): $' + o.cardFee.toFixed(2) : ''),
+    o.items.map(i => i.qty + ' × ' + i.name).join('\n') + (o.cardFee ? '\nCard processing fee: $' + o.cardFee.toFixed(2) : ''),
     o.total,
     o.payment === 'card' ? 'Card (Stripe)' : 'Interac e-Transfer',
     o.fulfilment === 'delivery' ? 'GTA delivery' : (o.fulfilment === 'ship' ? 'Canada Post shipping' : 'Pickup, Hamilton'),
@@ -445,7 +445,7 @@ function invoiceHtml_(o) {
   const rows = o.items.map(i =>
     '<tr><td>' + esc_(i.name) + '</td><td class="r">' + i.qty + '</td><td class="r">$' + i.unit.toFixed(2) +
     '</td><td class="r">$' + i.line.toFixed(2) + '</td></tr>').join('') +
-    (o.cardFee ? '<tr><td colspan="3">Card processing fee (your half; we pay the other half)</td><td class="r">$' + o.cardFee.toFixed(2) + '</td></tr>' : '');
+    (o.cardFee ? '<tr><td colspan="3">Card processing fee</td><td class="r">$' + o.cardFee.toFixed(2) + '</td></tr>' : '');
   const date = Utilities.formatDate(o.date, CONFIG.TIME_ZONE, 'MMMM d, yyyy');
   const pay = o.payment === 'card'
     ? 'Card payment through Stripe. Your Stripe receipt confirms payment.'
@@ -481,7 +481,7 @@ function invoiceHtml_(o) {
 // ---------------- EMAILS ----------------
 function emailCustomer_(o, checkoutUrl) {
   const items = o.items.map(i => '<li>' + i.qty + ' × ' + esc_(i.name) + ', $' + i.line.toFixed(2) + '</li>').join('') +
-    (o.cardFee ? '<li>Card processing fee (your half; we pay the other half), $' + o.cardFee.toFixed(2) + '</li>' : '');
+    (o.cardFee ? '<li>Card processing fee, $' + o.cardFee.toFixed(2) + '</li>' : '');
   let payBlock;
   if (o.payment === 'card' && checkoutUrl) {
     payBlock = '<p><b>Pay by card:</b> <a href="' + checkoutUrl + '">complete your secure Stripe payment</a>. ' +
@@ -539,7 +539,7 @@ function createStripeCheckout_(o) {
     'cancel_url': CONFIG.SITE_URL + '/#order'
   };
   const lines = o.items.map(it => ({ name: it.name, qty: it.qty, unit: it.unit }));
-  if (o.cardFee) lines.push({ name: 'Card processing fee (your half; we pay the other half)', qty: 1, unit: o.cardFee });
+  if (o.cardFee) lines.push({ name: 'Card processing fee', qty: 1, unit: o.cardFee });
   lines.forEach((it, n) => {
     p['line_items[' + n + '][quantity]'] = String(it.qty);
     p['line_items[' + n + '][price_data][currency]'] = 'cad';

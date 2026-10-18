@@ -44,23 +44,27 @@ recalculates the price on the server, so the website cannot change it. Customers
 **Until the Canada Post keys are added, every shipped order is charged a flat $16.99** (`SHIP_FALLBACK`),
 so ordering still works.
 
-1. Sign in to your Canada Post business account and join the **Developer Program** (canadapost-postescanada.ca → Developer Program).
-2. Copy your **API key** (a username and password pair) for the **Development** environment first.
-3. In Apps Script: **Project Settings (⚙) → Script properties → Add script property**. Add:
+1. In the Canada Post **Developer Portal**, open **Apps**, create an app and subscribe it to **Rating 4.0.0**.
+   Use a **Production** app (a Test app returns made-up prices). The app gets a **Client ID** (API key) and a **Client Secret**.
+   The secret is shown only once, so save it in a password manager.
+2. In Apps Script: **Project Settings (⚙) → Script properties → Add script property**. Add:
 
    | Property | Value |
    |----------|-------|
-   | `CP_API_USER` | the API key username |
-   | `CP_API_PASSWORD` | the API key password |
-   | `CP_CUSTOMER_NUMBER` | your Canada Post customer number |
-   | `CP_ENV` | `dev` while testing |
-   | `CP_CONTRACT_ID` | *(only if you have a commercial contract number)* |
+   | `CP_CLIENT_ID` | the app's Client ID (API key) |
+   | `CP_CLIENT_SECRET` | the app's Client Secret |
+   | `CP_CUSTOMER_NUMBER` | your Canada Post customer number (gets your small-business "commercial" prices; without it you get regular counter prices) |
+   | `CP_CONTRACT_ID` | *(only if you have a contract number; leave out otherwise)* |
 
-   These stay private inside Apps Script. Never put them in the website files or send them to anyone.
+   These stay private inside Apps Script. Never put them in the website files or share them.
+3. Paste the updated `Code.gs` and publish: **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**.
 4. Test: on the site choose "Ship anywhere in Canada", add a box and enter a postal code. You should see
-   Canada Post options. In dev mode the prices are test prices.
-5. When you are happy, create the **Production** API key, replace `CP_API_USER` and `CP_API_PASSWORD` with it, and set `CP_ENV` to `prod`.
-6. After any edit to `Code.gs`: **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**.
+   Canada Post options (not just "Standard shipping").
+   If you only see "Standard shipping" at the flat price, open **Executions** in Apps Script and look for a line
+   starting "Canada Post:" . It says what went wrong (wrong keys, app not subscribed to Rating, and so on).
+
+How it talks to Canada Post: it first gets a short-lived access token (OAuth 2.0 client credentials) and then asks the
+Rating API for prices as JSON. Tokens and prices are cached so the site stays fast.
 
 **Box weights and sizes are estimates.** Weigh and measure each packed box, then edit `SHIP_SPECS` near the top of
 `Code.gs` (`kg` and `l`/`w`/`h` in centimetres). Custom boxes estimate each item's weight from its size, plus the gift box

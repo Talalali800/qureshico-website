@@ -273,7 +273,7 @@ legend{margin-bottom:8px}
           <div><dt>Products</dt><dd id="sum-sub">$0.00</dd></div>
           <div><dt>Gift box and card</dt><dd id="sum-box">$6.99</dd></div>
           <div id="ship-row" hidden><dt>Shipping</dt><dd id="sum-ship">$0.00</dd></div>
-          <div id="fee-row" hidden><dt>Card processing fee <span class="fine">(your half; we pay the other half)</span></dt><dd id="sum-fee">$0.00</dd></div>
+          <div id="fee-row" hidden><dt>Card processing fee</dt><dd id="sum-fee">$0.00</dd></div>
           <div class="grand"><dt>Total</dt><dd id="sum-total">$0.00</dd></div>
         </dl>
       </div>
@@ -296,7 +296,7 @@ legend{margin-bottom:8px}
         <fieldset>
           <legend>Payment</legend>
           <label class="choice"><input type="radio" name="payment" value="etransfer" id="f-etransfer" checked><span><b>Interac e-Transfer</b><span class="fine">No fee. Send the total with your order number in the message.</span></span></label>
-          <label class="choice"><input type="radio" name="payment" value="card" id="f-card"><span><b>Credit or debit card</b><span class="fine" id="card-hint">Secure checkout by Stripe. Card processing costs about 2.9% + $0.30; you pay half and we pay half.</span></span></label>
+          <label class="choice"><input type="radio" name="payment" value="card" id="f-card"><span><b>Credit or debit card</b><span class="fine" id="card-hint">Secure checkout by Stripe. A card processing fee of about 2.9% + $0.30 is added.</span></span></label>
         </fieldset>
 
         <div class="field"><label for="f-notes">Card message and notes <span class="fine">(optional)</span></label><textarea id="f-notes" name="notes" rows="3" placeholder="Message for the handwritten card, preferred pickup day"></textarea></div>
@@ -325,7 +325,7 @@ legend{margin-bottom:8px}
 /* Paste the same Google Apps Script web app URL as on the main page. */
 const ORDER_ENDPOINT = "https://script.google.com/macros/s/AKfycbwSexkNuWC9BNWwKU7dhjHhy_HXrUb_uUyZYdSI3K2CQxxaS3NQ8kS8iQEvQ3CSHVfwlA/exec";
 const BOX_FEE = 6.99, BOX_MIN = 30, FREE_DELIVERY_MIN = 75;
-const CARD_FEE = { percent: 0.029, fixed: 0.30, customerShare: 0.5 };
+const CARD_FEE = { percent: 0.029, fixed: 0.30 };
 const CATALOG = [{"sku": "B-27051", "name": "Maple-leaf bottle, amber", "size": "50 ml", "price": 6.99, "cat": "syrup", "carry": true}, {"sku": "B-27101", "name": "Maple-leaf bottle, amber", "size": "100 ml", "price": 10.99, "cat": "syrup", "carry": true}, {"sku": "B-27241", "name": "Maple-leaf bottle, amber", "size": "250 ml", "price": 16.99, "cat": "syrup", "carry": false}, {"sku": "B-17101", "name": "Sugar shack tin, amber", "size": "100 ml", "price": 10.99, "cat": "syrup", "carry": true}, {"sku": "B-17251", "name": "Sugar shack tin, amber", "size": "250 ml", "price": 13.99, "cat": "syrup", "carry": false}, {"sku": "B-11541CAB", "name": "Classic can, amber", "size": "540 ml", "price": 10.99, "cat": "syrup", "carry": false}, {"sku": "B-14251", "name": "Dorica bottle, golden", "size": "250 ml", "price": 11.99, "cat": "syrup", "carry": false}, {"sku": "B-12252", "name": "Handle bottle, dark", "size": "250 ml", "price": 9.99, "cat": "syrup", "carry": false}, {"sku": "B-13102", "name": "Maple syrup jug, dark", "size": "100 ml", "price": 6.99, "cat": "syrup", "carry": true}, {"sku": "B-13252", "name": "Maple syrup jug, dark", "size": "250 ml", "price": 9.99, "cat": "syrup", "carry": false}, {"sku": "B-13552", "name": "Maple syrup jug, dark", "size": "500 ml", "price": 15.99, "cat": "syrup", "carry": false}, {"sku": "B-13702", "name": "Maple syrup jug, dark", "size": "1 L", "price": 25.99, "cat": "syrup", "carry": false}, {"sku": "LL-16231", "name": "Bretelles maple syrup, golden", "size": "236 ml", "price": 11.99, "cat": "syrup", "carry": false}, {"sku": "LL-16472", "name": "Bretelles maple syrup, amber", "size": "473 ml", "price": 17.99, "cat": "syrup", "carry": false}, {"sku": "LL-16473", "name": "Bretelles maple syrup, dark", "size": "473 ml", "price": 17.89, "cat": "syrup", "carry": false}, {"sku": "BD-30045", "name": "Pure maple butter", "size": "45 g", "price": 4.99, "cat": "spreads", "carry": true}, {"sku": "B-30160", "name": "Pure maple butter", "size": "160 g", "price": 8.99, "cat": "spreads", "carry": false}, {"sku": "B-30330", "name": "Pure maple butter", "size": "330 g", "price": 13.99, "cat": "spreads", "carry": false}, {"sku": "LL-30250", "name": "Bretelles maple butter", "size": "250 g", "price": 10.89, "cat": "spreads", "carry": false}, {"sku": "LL-30250BIO", "name": "Bretelles organic maple butter", "size": "250 g", "price": 10.99, "cat": "spreads", "carry": false}, {"sku": "B-35115", "name": "Maple jelly", "size": "115 ml", "price": 7.99, "cat": "spreads", "carry": false}, {"sku": "LL-35110", "name": "Aleppo pepper maple jelly", "size": "110 ml", "price": 8.99, "cat": "spreads", "carry": false}, {"sku": "LL-36250", "name": "Bretelles maple caramel", "size": "250 g", "price": 9.99, "cat": "spreads", "carry": false}, {"sku": "LL-34250", "name": "Bretelles maple taffy", "size": "250 g", "price": 10.99, "cat": "spreads", "carry": false}, {"sku": "BD-40025", "name": "Granulated maple sugar jar", "size": "25 g", "price": 4.99, "cat": "sugar", "carry": true}, {"sku": "B-40065", "name": "Granulated maple sugar shaker", "size": "65 g", "price": 6.99, "cat": "sugar", "carry": true}, {"sku": "LL-40200", "name": "Bretelles fine maple sugar", "size": "200 g", "price": 10.99, "cat": "sugar", "carry": true}, {"sku": "B-40250", "name": "Granulated maple sugar shaker", "size": "250 g", "price": 16.99, "cat": "sugar", "carry": true}, {"sku": "BD-40350", "name": "Fine maple sugar bag", "size": "350 g", "price": 14.99, "cat": "sugar", "carry": false}, {"sku": "B-55005", "name": "Soft maple candies, 5 pieces", "size": "35 g", "price": 5.99, "cat": "sweets", "carry": true}, {"sku": "B-55012", "name": "Soft maple candies, 12 pieces", "size": "84 g", "price": 11.89, "cat": "sweets", "carry": true}, {"sku": "BB-55012", "name": "Organic soft maple candies", "size": "84 g", "price": 11.99, "cat": "sweets", "carry": true}, {"sku": "LL-55010", "name": "Bretelles soft maple candies, 10 pieces", "size": "70 g", "price": 7.89, "cat": "sweets", "carry": true}, {"sku": "LL-55010BIO", "name": "Bretelles organic soft maple candies", "size": "70 g", "price": 7.99, "cat": "sweets", "carry": true}, {"sku": "B-56020", "name": "Maple lollipop", "size": "20 g", "price": 2.99, "cat": "sweets", "carry": true}, {"sku": "B-56090", "name": "Hard maple candies", "size": "90 g", "price": 6.99, "cat": "sweets", "carry": true}, {"sku": "LL-50140", "name": "Bretelles maple caramel popcorn", "size": "140 g", "price": 7.99, "cat": "sweets", "carry": true}];
 const qty = {}; CATALOG.forEach((p) => { qty[p.sku] = 0; });
 const customCart = () => { const c = {}; for (const k in qty) if (qty[k] > 0) c[k] = qty[k]; return c; };
@@ -386,7 +386,7 @@ function totals() {
   const card = document.querySelector('input[name="payment"]:checked').value === "card";
   const ship = Shipping.cost();
   const base = round2(subtotal + ship);
-  const fee = card && subtotal > 0 ? round2((base * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare) : 0;
+  const fee = card && subtotal > 0 ? round2((base + CARD_FEE.fixed) / (1 - CARD_FEE.percent) - base) : 0;
   return { lines, products, count, subtotal, ship, fee, total: round2(base + fee) };
 }
 
@@ -414,9 +414,9 @@ function render() {
   $("delivery-hint").textContent = canDeliver ? "Free on your order" : "Available on orders of $75 or more";
   $("address-field").hidden = !$("f-delivery").checked;
   Shipping.refresh();
-  const sample = t.subtotal > 0 ? t.subtotal : 50;
-  $("card-hint").textContent = "Secure checkout by Stripe. Card processing costs about 2.9% + $0.30; you pay half and we pay half. On " +
-    money(sample) + " your half is " + money(round2((sample * CARD_FEE.percent + CARD_FEE.fixed) * CARD_FEE.customerShare)) + ".";
+  const sample = t.subtotal > 0 ? round2(t.subtotal + t.ship) : 50;
+  $("card-hint").textContent = "Secure checkout by Stripe. A card processing fee of about 2.9% + $0.30 is added. On " +
+    money(sample) + " it is " + money(round2((sample + CARD_FEE.fixed) / (1 - CARD_FEE.percent) - sample)) + ". Interac e-Transfer has no fee.";
   $("bar-text").textContent = t.count ? t.count + (t.count === 1 ? " item · " : " items · ") + money(t.total) : "Your box is empty";
 }
 document.querySelectorAll('input[name="payment"], input[name="fulfilment"]').forEach((r) => r.addEventListener("change", render));

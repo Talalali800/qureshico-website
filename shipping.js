@@ -23,8 +23,8 @@
   function mount(c) {
     cfg = c;
     var box = $("ship-fields"); if (!box) return;
-    var street = input("f-street", "street", "address-line1");
-    var city = input("f-city", "city", "address-level2");
+    var street = input("f-street", "street", "address-line1", { maxlength: "120" });
+    var city = input("f-city", "city", "address-level2", { maxlength: "60" });
     var prov = document.createElement("select"); prov.id = "f-province"; prov.name = "province"; prov.autocomplete = "address-level1";
     prov.add(new Option("Choose…", ""));
     PROVINCES.forEach(function (p) { prov.add(new Option(p[1], p[0])); });

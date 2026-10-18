@@ -1,0 +1,9 @@
+.legal{max-width:760px;margin-inline:auto;padding-block:56px 40px}
+.legal h1{font-size:clamp(32px,5vw,44px);margin-bottom:6px}
+.legal .updated{color:var(--muted);font-size:14px;margin-bottom:28px}
+.legal h2{font-size:22px;margin:34px 0 10px}
+.legal p{margin:10px 0}
+.legal ul{padding-left:22px;margin:10px 0;display:grid;gap:8px}
+.legal a{color:var(--accent-ink)}
+.notfound{text-align:center;padding-block:96px}
+.notfound p{margin:14px auto 26px;color:var(--muted)}

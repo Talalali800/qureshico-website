@@ -2,7 +2,7 @@
  * Qureshi & Co. order system (Google Apps Script)
  *
  * What it does for every website order:
- *   1. Gives it the next order number (QC-1001, QC-1002, ...).
+ *   1. Gives it the next order number (QCM-1001, QCM-1002, ...).
  *   2. Adds a row to the "Orders" sheet.
  *   3. Saves a PDF invoice with the same number to Google Drive.
  *   4. Emails the customer their invoice and how to pay.
@@ -19,7 +19,7 @@ const CONFIG = {
   ETRANSFER_EMAIL: 'Talal.Ali@thequreshico.ca', // where customers send Interac e-Transfers
   PHONE: '437-992-7691',
   CITY: 'Hamilton, Ontario',
-  ORDER_PREFIX: 'QC-',
+  ORDER_PREFIX: 'QCM-',
   FIRST_ORDER_NUMBER: 1001,
   MAX_ORDERS_PER_EMAIL_PER_HOUR: 3,      // anti-spam
   MAX_ORDERS_PER_HOUR: 40,               // anti-flood (protects your Gmail sending limit)

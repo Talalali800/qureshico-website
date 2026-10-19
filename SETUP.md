@@ -4,7 +4,7 @@ Two things make the website work:
 
 1. **The website** (these files) — hosted free on GitHub Pages at https://thequreshico.ca
 2. **The order system** (`apps-script/Code.gs`) — a small program that runs in *your* Google account.
-   When a customer places an order on the website, it: numbers the order (QC-1001…), adds a row to a Google Sheet,
+   When a customer places an order on the website, it: numbers the order (QCM-1001…), adds a row to a Google Sheet,
    makes a PDF invoice in Google Drive, emails the customer and emails you.
 
 Until step A is done, the order button shows "Online ordering opens soon."

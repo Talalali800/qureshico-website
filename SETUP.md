@@ -109,6 +109,23 @@ check it if these ever stop working.)
 - https://thequreshico.ca loads the store, and https://www.thequreshico.ca redirects to it.
 - Email to contact@thequreshico.ca still works.
 
+### Bot protection with Cloudflare Turnstile (free)
+
+Turnstile is Cloudflare's invisible "are you a human" check. It stops scripts from flooding the order form with fake orders.
+It is **off until you add both keys**, so the shop keeps working in the meantime.
+
+1. Create a free account at cloudflare.com, then open **Turnstile** (left menu) → **Add widget**.
+2. Widget name: "Qureshi orders". Hostnames: add `thequreshico.ca` (and `www.thequreshico.ca`). Widget mode: **Managed**. Create it.
+3. Cloudflare shows a **Site key** (public) and a **Secret key** (private).
+4. **Site key:** put it in `turnstile.js` (the line `var SITE_KEY = "";`) and push the website to GitHub. (Or send the site key to Claude.)
+5. **Secret key:** in Apps Script, **Project Settings → Script properties → Add**: name `TURNSTILE_SECRET`, value = the secret key.
+   Never put the secret in any file or share it.
+6. Paste the latest `Code.gs` and publish a **New version** (do this after step 4 is live, and add the secret last).
+7. Test: place a small order. It should work with no visible puzzle. Orders posted straight to the script URL without a valid token are refused.
+
+If customers ever report "the security check has not finished", it usually means an ad blocker is blocking challenges.cloudflare.com.
+To switch Turnstile off again, delete the `TURNSTILE_SECRET` property in Apps Script.
+
 ---
 
 ## C. Security: what is in place and what you should keep doing
@@ -120,7 +137,7 @@ check it if these ever stop working.)
 - The page cannot be shown inside another website's frame, and it will only ever send a customer to Stripe's checkout address.
 - The order script (`Code.gs`) re-checks everything on the server: prices, shipping, quantities, product codes, address fields and
   total. The website cannot change a price.
-- Spam and bot protection: a hidden trap field, a minimum time on the page, 3 orders per email per hour, 40 orders per hour overall.
+- Spam and bot protection: a hidden trap field, a minimum time on the page, optional Cloudflare Turnstile (section above), 3 orders per email per hour, 40 orders per hour overall.
 - All customer text is escaped before it goes into invoices and emails, and spreadsheet cells starting with `=`, `+`, `-` or `@`
   are neutralised so they cannot run as formulas.
 - Error messages shown to visitors never include internal details. Secret keys live only in Apps Script **Script properties**.

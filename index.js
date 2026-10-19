@@ -84,6 +84,7 @@ $("order-form").addEventListener("submit", async (e) => {
   if (fulfilment === "delivery" && !$("f-address").value.trim()) return showError("Please enter your delivery address.");
   if (fulfilment === "ship") { const se = Shipping.validate(); if (se) return showError(se); }
   if (!ORDER_ENDPOINT) return showError("Online ordering opens soon. Until then, message us to pre-order.");
+  if (Captcha.enabled() && !Captcha.token()) return showError("The security check has not finished yet. Please wait a few seconds and try again. If this keeps happening, turn off any content blocker for this site, or contact us.");
 
   const btn = $("submit-btn"); btn.disabled = true; btn.textContent = "Placing order…";
   try {
@@ -91,7 +92,7 @@ $("order-form").addEventListener("submit", async (e) => {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(Object.assign({ name: $("f-name").value, email: $("f-email").value, phone: $("f-phone").value, items: qty,
-        fulfilment, address: $("f-address").value, payment, notes: $("f-notes").value, website: $("f-website").value, elapsed: Date.now() - window.__t0 },
+        fulfilment, address: $("f-address").value, payment, notes: $("f-notes").value, website: $("f-website").value, elapsed: Date.now() - window.__t0, captcha: Captcha.token() },
         fulfilment === "ship" ? Shipping.payload() : {}))
     });
     const r = await res.json();
@@ -108,6 +109,7 @@ $("order-form").addEventListener("submit", async (e) => {
     showError(err.message === "Failed to fetch" ? "We could not reach our order system. Please try again, or contact us." : err.message);
   } finally {
     btn.disabled = false; btn.textContent = "Place order";
+    Captcha.reset();
   }
 });
 

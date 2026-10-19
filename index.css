@@ -172,3 +172,5 @@ legend{margin-bottom:8px}
 .done b{color:var(--accent-ink)}
 @media (prefers-reduced-motion:no-preference){.btn{transition:filter .15s}}
 .flush{margin-bottom:0}
+.captcha:empty{display:none}
+.captcha{margin-block:12px}

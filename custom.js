@@ -112,12 +112,13 @@ $("order-form").addEventListener("submit", async (e) => {
   if (fulfilment === "delivery" && !$("f-address").value.trim()) return showError("Please enter your delivery address.");
   if (fulfilment === "ship") { const se = Shipping.validate(); if (se) return showError(se); }
   if (!ORDER_ENDPOINT) return showError("Online ordering opens soon. Until then, message us to order a custom box.");
+  if (Captcha.enabled() && !Captcha.token()) return showError("The security check has not finished yet. Please wait a few seconds and try again. If this keeps happening, turn off any content blocker for this site, or contact us.");
   const btn = $("submit-btn"); btn.disabled = true; btn.textContent = "Placing order…";
   try {
     const custom = {}; for (const k in qty) if (qty[k] > 0) custom[k] = qty[k];
     const res = await fetch(ORDER_ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(Object.assign({ name: $("f-name").value, email: $("f-email").value, phone: $("f-phone").value, custom,
-        fulfilment, address: $("f-address").value, payment, notes: $("f-notes").value, website: $("f-website").value, elapsed: Date.now() - window.__t0 },
+        fulfilment, address: $("f-address").value, payment, notes: $("f-notes").value, website: $("f-website").value, elapsed: Date.now() - window.__t0, captcha: Captcha.token() },
         fulfilment === "ship" ? Shipping.payload() : {})) });
     const r = await res.json();
     if (!r.ok) throw new Error(r.error || "Something went wrong.");
@@ -129,7 +130,7 @@ $("order-form").addEventListener("submit", async (e) => {
     $("order-form").hidden = true; $("order-done").hidden = false; $("order-done").focus();
   } catch (err) {
     showError(err.message === "Failed to fetch" ? "We could not reach our order system. Please try again, or contact us." : err.message);
-  } finally { btn.disabled = false; btn.textContent = "Place order"; }
+  } finally { btn.disabled = false; btn.textContent = "Place order"; Captcha.reset(); }
 });
 
 buildGrid(); applyFilter(); render();

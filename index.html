@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com https://challenges.cloudflare.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; upgrade-insecure-requests">
 <meta name="referrer" content="no-referrer">
 <script src="security.js"></script>
 <meta name="description" content="Carry-on-ready Canadian maple gift boxes. Pickup in Hamilton, delivery in the GTA, shipping across Canada.">
@@ -187,6 +187,7 @@
         <div class="field"><label for="f-notes">Notes <span class="fine">(optional)</span></label><textarea maxlength="500" id="f-notes" name="notes" rows="2" placeholder="Gift message, preferred pickup day, allergies"></textarea></div>
         <div class="hp" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" name="website" tabindex="-1" autocomplete="off"></div>
 
+        <div id="captcha" class="captcha"></div>
         <p id="form-error" class="error" role="alert" hidden></p>
         <button class="btn" type="submit" id="submit-btn">Place order</button>
         <p class="fine">By ordering you agree to our <a href="terms.html">Terms of Sale</a> and <a href="refund.html">Cancellation and Refund Policy</a> (full refund within 48 hours, then a $10 fee). See our <a href="privacy.html">Privacy Policy</a> for how we use your information.</p>
@@ -296,6 +297,7 @@
 </main>
 
 <script src="shipping.js"></script>
+<script src="turnstile.js"></script>
 <script src="index.js"></script>
 </body>
 </html>

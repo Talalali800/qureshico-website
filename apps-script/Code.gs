@@ -153,6 +153,8 @@ function doPost(e) {
   if (data.action === 'quote') return json_(quote_(data));
   // Real visitors need a few seconds to choose items and fill the form. Scripts that post straight to this URL do not.
   if (!(Number(data.elapsed) >= CONFIG.MIN_FORM_MS)) return json_({ ok: false, error: 'Please review your order and try again.' });
+  const captchaError = verifyCaptcha_(data.captcha);
+  if (captchaError) return json_({ ok: false, error: captchaError });
 
   let order;
   try {
@@ -615,6 +617,28 @@ function getFolder_() {
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
+/** Cloudflare Turnstile bot check. Switched off until TURNSTILE_SECRET is added to Script properties. */
+function verifyCaptcha_(token) {
+  const secret = PropertiesService.getScriptProperties().getProperty('TURNSTILE_SECRET');
+  if (!secret) return null;
+  const failed = 'Please complete the security check and try again.';
+  const unavailable = 'The security check is unavailable right now. Please try again in a few minutes, or contact us.';
+  if (typeof token !== 'string' || !token || token.length > 2048) return failed;
+  try {
+    const res = UrlFetchApp.fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'post', muteHttpExceptions: true, payload: { secret: secret, response: token }
+    });
+    if (res.getResponseCode() !== 200) { console.error('Turnstile HTTP ' + res.getResponseCode()); return unavailable; }
+    const out = JSON.parse(res.getContentText());
+    if (out.success === true) return null;
+    console.error('Turnstile refused the token: ' + JSON.stringify(out['error-codes'] || []));
+    return failed;
+  } catch (err) {
+    console.error('Turnstile: ' + err.message);
+    return unavailable;
+  }
+}
+
 /** True only for properties we defined ourselves (not "constructor", "__proto__" and the like). */
 function has_(obj, key) { return Object.prototype.hasOwnProperty.call(obj, key); }
 /** Message that is safe to show a visitor: our own messages pass through, internal errors are replaced. */

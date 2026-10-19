@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com https://challenges.cloudflare.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; upgrade-insecure-requests">
 <meta name="referrer" content="no-referrer">
 <script src="security.js"></script>
 <title>Build Your Box · Qureshi &amp; Co.</title>
@@ -95,6 +95,7 @@
         <div class="field"><label for="f-notes">Card message and notes <span class="fine">(optional)</span></label><textarea maxlength="500" id="f-notes" name="notes" rows="3" placeholder="Message for the handwritten card, preferred pickup day"></textarea></div>
         <div class="hp" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" name="website" tabindex="-1" autocomplete="off"></div>
 
+        <div id="captcha" class="captcha"></div>
         <p id="form-error" class="error" role="alert" hidden></p>
         <button class="btn" type="submit" id="submit-btn">Place order</button>
         <p class="fine">By ordering you agree to our <a href="terms.html">Terms of Sale</a> and <a href="refund.html">Cancellation and Refund Policy</a> (full refund within 48 hours, then a $10 fee). See our <a href="privacy.html">Privacy Policy</a> for how we use your information.</p>
@@ -115,6 +116,7 @@
 </main>
 <div class="mobile-bar" aria-live="polite"><span id="bar-text">Your box is empty</span><a href="#your-box">Review box</a></div>
 <script src="shipping.js"></script>
+<script src="turnstile.js"></script>
 <script src="custom.js"></script>
 </body>
 </html>

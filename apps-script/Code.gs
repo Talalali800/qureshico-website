@@ -163,6 +163,7 @@ function doPost(e) {
   const limited = rateLimit_(order.email);
   if (limited) return json_({ ok: false, error: limited });
 
+  let checkoutUrl = null;
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(20000);
@@ -171,21 +172,25 @@ function doPost(e) {
     order.number = CONFIG.ORDER_PREFIX + next;
     props.setProperty('NEXT_ORDER', String(next + 1));
     order.date = new Date();
+    if (order.payment === 'card') {
+      // Open the Stripe checkout BEFORE the invoice is made. If Stripe is unavailable the order becomes a plain
+      // e-Transfer order (no card fee), so the invoice, the emails and the sheet all show the same amount.
+      try {
+        checkoutUrl = createStripeCheckout_(order);
+      } catch (err) {
+        console.error('Stripe: ' + err.message);
+        order.cardError = true;
+        order.payment = 'etransfer';
+        order.cardFee = 0;
+        order.total = order.subtotal;
+      }
+    }
     order.invoiceUrl = saveInvoice_(order);
     appendRow_(order);
   } catch (err) {
     return json_({ ok: false, error: 'Our order system is busy. Please try again in a minute, or contact us.' });
   } finally {
     lock.releaseLock();
-  }
-
-  let checkoutUrl = null;
-  if (order.payment === 'card') {
-    try {
-      checkoutUrl = createStripeCheckout_(order);
-    } catch (err) {
-      order.cardError = true; // the customer can still pay by e-Transfer
-    }
   }
 
   try { emailCustomer_(order, checkoutUrl); } catch (err) { /* order is saved even if email fails */ }
@@ -492,7 +497,7 @@ function emailCustomer_(o, checkoutUrl) {
     payBlock = '<p><b>Pay by card:</b> <a href="' + checkoutUrl + '">complete your secure Stripe payment</a>. ' +
       'If you already paid, you can ignore this link.</p>';
   } else {
-    payBlock = '<p><b>Pay by Interac e-Transfer:</b> send <b>$' + (o.cardError ? o.subtotal : o.total).toFixed(2) + '</b> to <b>' + esc_(CONFIG.ETRANSFER_EMAIL) +
+    payBlock = '<p><b>Pay by Interac e-Transfer:</b> send <b>$' + o.total.toFixed(2) + '</b> to <b>' + esc_(CONFIG.ETRANSFER_EMAIL) +
       '</b> and put <b>' + o.number + '</b> in the message. We hold your order for ' + CONFIG.PAYMENT_HOLD_HOURS + ' hours.</p>' +
       (o.cardError ? '<p>Our card checkout was unavailable when you ordered, so please use e-Transfer, or reply and we will send a card link.</p>' : '');
   }

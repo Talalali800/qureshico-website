@@ -208,3 +208,5 @@ legend{margin-bottom:8px}
   body{padding-bottom:72px}
 }
 .flush{margin-bottom:0}
+.captcha:empty{display:none}
+.captcha{margin-block:12px}

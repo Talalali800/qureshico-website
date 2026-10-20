@@ -35,6 +35,22 @@ Interac e-Transfer works without Stripe. To also accept cards:
    (starts `sk_live_…`; use `sk_test_…` first to try it). **Never** put this key in the website files or share it.
 3. Run the function **installStripeSync** once (marks card orders "Paid" automatically).
 
+### Colour-coded Orders sheet
+
+Run the function **colorCodeOrders** once from the Apps Script editor (pick it in the function dropdown, click Run). Every row is then coloured by its Status:
+
+| Colour | Status |
+|--------|--------|
+| Amber | Awaiting payment |
+| **Red** | Awaiting payment for longer than 24 hours: follow up or cancel |
+| Green | Paid |
+| Blue | Packed |
+| Teal | Picked up / Delivered |
+| Grey, struck through | Cancelled |
+| Purple | Refunded |
+
+The Status cell is a stronger version of the row colour. Change a row's Status with the dropdown and the colour follows. Card orders turn green by themselves; for Interac e-Transfers, set the Status to **Paid** when the money arrives.
+
 ### Shipping across Canada with Canada Post (live rates)
 
 Customers can choose **Ship anywhere in Canada**. They enter a postal code and see Canada Post prices

@@ -453,41 +453,112 @@ function saveInvoice_(o) {
   return file.getUrl();
 }
 
+/** Your logo (maple drop), embedded so the PDF never depends on a web address. PNG, about 44 pt wide when printed. */
+const LOGO_DATA_URI = 'data:image/png;base64,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';
+
+function money_(n) { return '$' + Number(n).toFixed(2); }
+/** 4165551234 -> 416-555-1234 (anything that is not a plain 10-digit number is shown as typed). */
+function fmtPhone_(p) {
+  const d = String(p == null ? '' : p).replace(/\D/g, '');
+  return d.length === 10 ? d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6) : String(p == null ? '' : p);
+}
+
+/**
+ * The invoice PDF. Built from plain tables and inline colours because Google's HTML-to-PDF converter
+ * ignores modern layout (flexbox, grid, web fonts). Fonts are the safe set: Georgia for headings, Helvetica for text.
+ */
 function invoiceHtml_(o) {
-  const rows = o.items.map(i =>
-    '<tr><td>' + esc_(i.name) + '</td><td class="r">' + i.qty + '</td><td class="r">$' + i.unit.toFixed(2) +
-    '</td><td class="r">$' + i.line.toFixed(2) + '</td></tr>').join('') +
-    (o.cardFee ? '<tr><td colspan="3">Card processing fee</td><td class="r">$' + o.cardFee.toFixed(2) + '</td></tr>' : '');
+  const INK = '#33210F', MUTED = '#6E5641', ACCENT = '#B8660F', CREAM = '#F7EFE2', ROW = '#FBF6EC', LINE = '#E3D5BE';
+  const SERIF = 'Georgia,Times New Roman,serif', SANS = 'Helvetica,Arial,sans-serif';
   const date = Utilities.formatDate(o.date, CONFIG.TIME_ZONE, 'MMMM d, yyyy');
-  const pay = o.payment === 'card'
-    ? 'Card payment through Stripe. Your Stripe receipt confirms payment.'
-    : 'Interac e-Transfer of $' + o.total.toFixed(2) + ' to ' + esc_(CONFIG.ETRANSFER_EMAIL) +
-      '. Put <b>' + o.number + '</b> in the message. Unpaid orders are held for ' + CONFIG.PAYMENT_HOLD_HOURS + ' hours.';
-  const where = o.fulfilment === 'delivery'
-    ? 'GTA delivery to: ' + esc_(o.address)
-    : (o.fulfilment === 'ship'
-      ? 'Shipped by Canada Post to: ' + esc_(o.address) + '. We will email you a tracking number when it ships.'
-      : 'Pickup in ' + esc_(CONFIG.CITY) + ' from ' + esc_(CONFIG.PICKUP_FROM) + '. We will email the address and times.');
-  return '<html><head><style>' +
-    'body{font-family:Helvetica,Arial,sans-serif;color:#33210F;font-size:12px;margin:36px}' +
-    'h1{font-size:26px;margin:0;color:#B8660F}.muted{color:#6E5641}' +
-    'table{width:100%;border-collapse:collapse;margin-top:18px}th,td{padding:8px 6px;border-bottom:1px solid #E3D5BE;text-align:left}' +
-    'th{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6E5641}.r{text-align:right}' +
-    '.total td{font-weight:bold;font-size:14px;border-bottom:0}.box{background:#F7EFE2;padding:12px;margin-top:18px}' +
-    '</style></head><body>' +
-    '<table style="margin:0"><tr><td style="border:0;padding:0"><h1>' + esc_(CONFIG.BUSINESS_NAME) + '</h1>' +
-    '<div class="muted">' + esc_(CONFIG.CITY) + '<br>' + esc_(CONFIG.BUSINESS_EMAIL) + ' · ' + esc_(CONFIG.PHONE) + '</div></td>' +
-    '<td class="r" style="border:0;padding:0;vertical-align:top"><b style="font-size:16px">INVOICE ' + o.number + '</b><br>' +
-    '<span class="muted">Order number: ' + o.number + '<br>Date: ' + date + '</span></td></tr></table>' +
-    '<p style="margin-top:22px"><b>Bill to</b><br>' + esc_(o.name) + '<br>' + esc_(o.email) + '<br>' + esc_(o.phone) + '</p>' +
-    '<table><tr><th>Item</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Amount</th></tr>' + rows +
-    '<tr class="total"><td colspan="3" class="r">Total (CAD)</td><td class="r">$' + o.total.toFixed(2) + '</td></tr></table>' +
-    '<div class="box"><b>Payment</b><br>' + pay + '</div>' +
-    '<div class="box"><b>Pickup or delivery</b><br>' + where + '</div>' +
-    (o.notes ? '<div class="box"><b>Your notes</b><br>' + esc_(o.notes) + '</div>' : '') +
-    '<p class="muted" style="margin-top:22px">Cancellation: full refund within 48 hours of ordering. After 48 hours, refunds are less a $10 cancellation fee. ' +
-    'Thank you for your order.</p>' +
-    '</body></html>';
+  const products = o.items.filter(i => i.id !== 'shipping');
+  const ship = o.items.filter(i => i.id === 'shipping')[0];
+  const goods = round2_(products.reduce((s, i) => s + i.line, 0));
+
+  const label = (t) => '<div style="font-family:' + SANS + ';font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:' + MUTED + ';padding-bottom:3px;">' + t + '</div>';
+  const th = (t, align, w) => '<td ' + (w ? 'width="' + w + '" ' : '') + 'align="' + align + '" bgcolor="' + INK + '" style="background:' + INK +
+    ';color:#FFFFFF;font-family:' + SANS + ';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:9px 10px;">' + t + '</td>';
+  const cell = (html, align, bg, extra) => '<td align="' + align + '" bgcolor="' + bg + '" style="background:' + bg + ';font-family:' + SANS +
+    ';font-size:11px;color:' + INK + ';padding:9px 10px;border-bottom:1px solid ' + LINE + ';' + (extra || '') + '">' + html + '</td>';
+  const sumRow = (text, value) => '<tr><td colspan="3" align="right" style="font-family:' + SANS + ';font-size:11px;color:' + MUTED + ';padding:7px 10px;">' + text +
+    '</td><td align="right" style="font-family:' + SANS + ';font-size:11px;color:' + INK + ';padding:7px 10px;">' + value + '</td></tr>';
+
+  const itemRows = products.map((i, n) => {
+    const bg = n % 2 ? ROW : '#FFFFFF';
+    return '<tr>' + cell(esc_(i.name), 'left', bg) + cell(String(i.qty), 'right', bg) + cell(money_(i.unit), 'right', bg) + cell(money_(i.line), 'right', bg, 'font-weight:bold;') + '</tr>';
+  }).join('');
+
+  const payText = o.payment === 'card'
+    ? 'Pay securely by card using the Stripe link in your confirmation email. Your Stripe receipt confirms your payment.'
+    : '<b>1.</b> Send <b>' + money_(o.total) + '</b> by Interac e-Transfer to <b>' + esc_(CONFIG.ETRANSFER_EMAIL) + '</b><br>' +
+      '<b>2.</b> Put <b>' + esc_(o.number) + '</b> in the message<br>' +
+      '<b>3.</b> We hold your order for ' + CONFIG.PAYMENT_HOLD_HOURS + ' hours while we wait for your payment';
+  const status = o.payment === 'card' ? 'Awaiting card payment' : 'Awaiting e-Transfer';
+  const method = o.payment === 'card' ? 'Credit or debit card' : 'Interac e-Transfer';
+
+  let wherePlace, whereDetail;
+  if (o.fulfilment === 'ship') { wherePlace = 'Shipped by Canada Post'; whereDetail = esc_(o.address) + '<br><span style="color:' + MUTED + ';">We will email your tracking number when it ships.</span>'; }
+  else if (o.fulfilment === 'delivery') { wherePlace = 'GTA delivery'; whereDetail = esc_(o.address) + '<br><span style="color:' + MUTED + ';">We will contact you to arrange a time.</span>'; }
+  else { wherePlace = 'Pickup in ' + esc_(CONFIG.CITY); whereDetail = 'From ' + esc_(CONFIG.PICKUP_FROM) + '<br><span style="color:' + MUTED + ';">We will email the address and pickup times.</span>'; }
+
+  const metaCell = (title, value, w) => '<td width="' + w + '" valign="top" style="padding:10px 12px;">' + label(title) +
+    '<div style="font-family:' + SANS + ';font-size:11px;font-weight:bold;color:' + INK + ';">' + value + '</div></td>';
+
+  return '<html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#FFFFFF;">' +
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr><td style="padding:34px 38px 30px 38px;">' +
+
+    // header: logo and business on the left, INVOICE on the right
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>' +
+    '<td width="60" valign="middle"><img src="' + LOGO_DATA_URI + '" width="44" height="65" alt=""></td>' +
+    '<td valign="middle" style="padding-left:6px;"><div style="font-family:' + SERIF + ';font-size:21px;font-weight:bold;color:' + ACCENT + ';">' + esc_(CONFIG.BUSINESS_NAME) + '</div>' +
+    '<div style="font-family:' + SANS + ';font-size:10px;color:' + MUTED + ';padding-top:3px;">Canadian maple gifts, carry-on ready<br>' +
+    esc_(CONFIG.CITY) + ' · ' + esc_(CONFIG.BUSINESS_EMAIL) + ' · ' + esc_(CONFIG.PHONE) + '</div></td>' +
+    '<td align="right" valign="middle"><div style="font-family:' + SERIF + ';font-size:30px;letter-spacing:4px;color:' + INK + ';">INVOICE</div>' +
+    '<div style="font-family:' + SANS + ';font-size:12px;font-weight:bold;color:' + ACCENT + ';padding-top:4px;">' + esc_(o.number) + '</div></td>' +
+    '</tr></table>' +
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:14px;"><tr><td height="4" bgcolor="' + ACCENT + '" style="background:' + ACCENT + ';font-size:1px;line-height:4px;">&nbsp;</td></tr></table>' +
+
+    // order details strip
+    '<table width="100%" cellpadding="0" cellspacing="0" bgcolor="' + CREAM + '" style="border-collapse:collapse;background:' + CREAM + ';margin-top:14px;"><tr>' +
+    metaCell('Invoice no.', esc_(o.number), '25%') + metaCell('Date', date, '25%') + metaCell('Payment method', method, '25%') + metaCell('Status', status, '25%') +
+    '</tr></table>' +
+
+    // billed to / delivery
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:18px;"><tr>' +
+    '<td width="50%" valign="top" style="padding-right:12px;">' + label('Billed to') +
+    '<div style="font-family:' + SANS + ';font-size:11px;line-height:16px;color:' + INK + ';"><b>' + esc_(o.name) + '</b><br>' + esc_(o.email) + '<br>' + esc_(fmtPhone_(o.phone)) + '</div></td>' +
+    '<td width="50%" valign="top" style="padding-left:12px;">' + label('Pickup or delivery') +
+    '<div style="font-family:' + SANS + ';font-size:11px;line-height:16px;color:' + INK + ';"><b>' + wherePlace + '</b><br>' + whereDetail + '</div></td>' +
+    '</tr></table>' +
+
+    // items
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:20px;"><tr>' +
+    th('Item', 'left', '52%') + th('Qty', 'right', '10%') + th('Price', 'right', '18%') + th('Amount', 'right', '20%') + '</tr>' + itemRows +
+    ((ship || o.cardFee) ? sumRow('Subtotal', money_(goods)) : '') +
+    (ship ? sumRow('Shipping: ' + esc_(String(ship.name).replace(/^Shipping:\s*/, '')), money_(ship.line)) : '') +
+    (o.cardFee ? sumRow('Card processing fee', money_(o.cardFee)) : '') +
+    '<tr><td colspan="3" align="right" bgcolor="' + ACCENT + '" style="background:' + ACCENT + ';color:#FFFFFF;font-family:' + SANS + ';font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:bold;padding:12px 10px;">Total due (CAD)</td>' +
+    '<td align="right" bgcolor="' + ACCENT + '" style="background:' + ACCENT + ';color:#FFFFFF;font-family:' + SERIF + ';font-size:18px;font-weight:bold;padding:10px 10px;">' + money_(o.total) + '</td></tr>' +
+    '</table>' +
+
+    // how to pay
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:20px;"><tr>' +
+    '<td width="5" bgcolor="' + ACCENT + '" style="background:' + ACCENT + ';">&nbsp;</td>' +
+    '<td bgcolor="' + CREAM + '" style="background:' + CREAM + ';padding:12px 16px;"><div style="font-family:' + SERIF + ';font-size:13px;font-weight:bold;color:' + INK + ';padding-bottom:5px;">How to pay</div>' +
+    '<div style="font-family:' + SANS + ';font-size:11px;line-height:17px;color:' + INK + ';">' + payText + '</div></td></tr></table>' +
+
+    (o.notes ? '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:12px;"><tr><td width="5" bgcolor="' + LINE + '" style="background:' + LINE + ';">&nbsp;</td>' +
+      '<td style="padding:10px 16px;border:1px solid ' + LINE + ';"><div style="font-family:' + SANS + ';font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:' + MUTED + ';padding-bottom:3px;">Your notes</div>' +
+      '<div style="font-family:' + SANS + ';font-size:11px;color:' + INK + ';">' + esc_(o.notes) + '</div></td></tr></table>' : '') +
+
+    // footer
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:26px;"><tr><td align="center" style="border-top:1px solid ' + LINE + ';padding-top:14px;">' +
+    '<div style="font-family:' + SERIF + ';font-size:14px;font-style:italic;color:' + ACCENT + ';">Thank you for choosing ' + esc_(CONFIG.BUSINESS_NAME) + '</div>' +
+    '<div style="font-family:' + SANS + ';font-size:9px;line-height:14px;color:' + MUTED + ';padding-top:6px;">' +
+    'Cancellation: full refund within 48 hours of ordering. After 48 hours, refunds are less a $10 cancellation fee.<br>' +
+    'Questions? ' + esc_(CONFIG.BUSINESS_EMAIL) + ' · ' + esc_(CONFIG.PHONE) + ' · thequreshico.ca</div></td></tr></table>' +
+
+    '</td></tr></table></body></html>';
 }
 
 // ---------------- EMAILS ----------------

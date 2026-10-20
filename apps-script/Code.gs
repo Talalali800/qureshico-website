@@ -120,10 +120,55 @@ function setup() {
   const rule = SpreadsheetApp.newDataValidation().requireValueInList(STATUSES, true).build();
   sheet.getRange(2, 3, 1000, 1).setDataValidation(rule);
   sheet.getRange(2, 8, 1000, 1).setNumberFormat('0.00');
+  colorCodeOrders();
   getFolder_();
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('NEXT_ORDER')) props.setProperty('NEXT_ORDER', String(CONFIG.FIRST_ORDER_NUMBER));
   Logger.log('Setup complete. Next order number: ' + CONFIG.ORDER_PREFIX + props.getProperty('NEXT_ORDER'));
+}
+
+/**
+ * Colour-codes every row of the Orders sheet by its Status. Run it once from the editor (it is safe to run again).
+ *   red     = awaiting payment for longer than the hold time: follow up or cancel
+ *   amber   = awaiting payment      green  = paid           blue  = packed
+ *   teal    = picked up / delivered grey  = cancelled       purple = refunded
+ * The Status cell itself gets a stronger version of the row colour so it stands out.
+ */
+function colorCodeOrders() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ss.setSpreadsheetTimeZone(CONFIG.TIME_ZONE); // so "older than 24 hours" is measured in your time
+  const sheet = getSheet_();
+  const rows = sheet.getRange('A2:N5000'), status = sheet.getRange('C2:C5000');
+  const make = (range, formula, bg, font, bold, strike) => {
+    const b = SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(formula).setBackground(bg).setRanges([range]);
+    if (font) b.setFontColor(font);
+    if (bold) b.setBold(true);
+    if (strike) b.setStrikethrough(true);
+    return b.build();
+  };
+  // [status, row colour, status-cell colour, status-cell text, grey out the row]
+  const scheme = [
+    ['Awaiting payment', '#FFF3CD', '#F5C242', '#33210F', false],
+    ['Paid',             '#DDF2E3', '#3FA66A', '#FFFFFF', false],
+    ['Packed',           '#DCEBFA', '#5B9BD5', '#FFFFFF', false],
+    ['Picked up',        '#D4F0EE', '#2E9C94', '#FFFFFF', false],
+    ['Delivered',        '#D4F0EE', '#2E9C94', '#FFFFFF', false],
+    ['Cancelled',        '#ECECEC', '#9E9E9E', '#FFFFFF', true],
+    ['Refunded',         '#EBDDF6', '#9B6BC8', '#FFFFFF', false]
+  ];
+  // Unpaid for longer than the hold time. Listed first so it wins over the amber rule. The Date column is text like 2026-10-20 14:05.
+  const overdue = '=AND($C2="Awaiting payment",IFERROR(NOW()-(DATEVALUE(LEFT($B2,10))+TIMEVALUE(MID($B2,12,5)))>' + CONFIG.PAYMENT_HOLD_HOURS + '/24,FALSE))';
+  const rules = [
+    make(status, overdue, '#E5675B', '#FFFFFF', true, false),
+    make(rows, overdue, '#FADBD8', null, false, false)
+  ];
+  scheme.forEach(s => {
+    const f = '=$C2="' + s[0] + '"';
+    rules.push(make(status, f, s[2], s[3], true, false));
+    rules.push(make(rows, f, s[1], s[4] ? '#7A7A7A' : null, false, s[4]));
+  });
+  sheet.setConditionalFormatRules(rules);
+  Logger.log('Orders sheet is now colour-coded by status.');
 }
 
 /** Optional: run once after adding your Stripe key, to mark card orders Paid automatically every 15 minutes. */
@@ -489,7 +534,7 @@ function invoiceHtml_(o) {
   }).join('');
 
   const payText = o.payment === 'card'
-    ? 'Pay securely by card using the Stripe link in your confirmation email. Your Stripe receipt confirms your payment.'
+    ? 'Pay securely by card using the Stripe link in your confirmation email. Your Stripe receipt confirms your payment. The card processing fee is not refundable.'
     : '<b>1.</b> Send <b>' + money_(o.total) + '</b> by Interac e-Transfer to <b>' + esc_(CONFIG.ETRANSFER_EMAIL) + '</b><br>' +
       '<b>2.</b> Put <b>' + esc_(o.number) + '</b> in the message<br>' +
       '<b>3.</b> We hold your order for ' + CONFIG.PAYMENT_HOLD_HOURS + ' hours while we wait for your payment';

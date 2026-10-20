@@ -91,7 +91,7 @@ function render() {
   $("address-field").hidden = !$("f-delivery").checked;
   Shipping.refresh();
   const sample = t.subtotal > 0 ? round2(t.subtotal + t.ship) : 50;
-  $("card-hint").textContent = "Secure checkout by Stripe. A card processing fee of about 2.9% + $0.30 is added. On " +
+  $("card-hint").textContent = "Secure checkout by Stripe. A card processing fee of about 2.9% + $0.30 is added (non-refundable). On " +
     money(sample) + " it is " + money(round2((sample + CARD_FEE.fixed) / (1 - CARD_FEE.percent) - sample)) + ". Interac e-Transfer has no fee.";
   $("bar-text").textContent = t.count ? t.count + (t.count === 1 ? " item · " : " items · ") + money(t.total) : "Your box is empty";
 }

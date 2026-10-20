@@ -55,7 +55,7 @@ function render() {
   Shipping.refresh();
   const sample = t.subtotal > 0 ? round2(t.subtotal + t.ship) : 50;
   const sampleFee = round2((sample + CARD_FEE.fixed) / (1 - CARD_FEE.percent) - sample);
-  $("card-hint").textContent = "Secure checkout by Stripe. A card processing fee of about 2.9% + $0.30 is added. On " +
+  $("card-hint").textContent = "Secure checkout by Stripe. A card processing fee of about 2.9% + $0.30 is added (non-refundable). On " +
     money(sample) + " it is " + money(sampleFee) + ". Interac e-Transfer has no fee.";
 }
 

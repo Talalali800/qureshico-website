@@ -15,6 +15,7 @@
         sitekey: SITE_KEY,
         appearance: "interaction-only", /* invisible unless Cloudflare needs the visitor to do something */
         theme: "auto",
+        size: "flexible", /* fills the form width (minimum 300 px) */
         callback: function (t) { token = t; failed = false; },
         "expired-callback": function () { token = ""; },
         "error-callback": function () { token = ""; failed = true; }

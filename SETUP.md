@@ -72,7 +72,7 @@ Dates are written for you in the Orders tab when you change a Status: **Paid on*
 
 ### Automatic e-Transfer matching
 
-When a customer pays by Interac e-Transfer, the script can mark their order **Paid** for you. It works like this: your bank/Interac emails you a "sent you money" notice at `Talal.Ali@thequreshico.ca`. A forwarding rule copies **only Interac notices** to the Google account that owns this script (the Gmail where Apps Script runs). Every 10 minutes the script reads those notices and matches them to orders. The script runs in your own Google account and nothing else can read your mailbox.
+When a customer pays by Interac e-Transfer, the script can mark their order **Paid** for you. It works like this: your bank/Interac emails you a "sent you money" notice at `Talal.Ali@thequreshico.ca`. A forwarding rule copies **only Interac notices** to **stalal0164@gmail.com**, the Google account that owns this script. Every 10 minutes the script reads those notices and matches them to orders. The script runs in your own Google account and nothing else can read your mailbox.
 
 An order is marked Paid **only when all of these are true**:
 1. The email is from an `interac.ca` address **and Gmail's own check confirms it genuinely came from Interac** (this stops forged emails).
@@ -83,7 +83,7 @@ An order is marked Paid **only when all of these are true**:
 If anything does not line up (wrong amount, no order number, a payment for a cancelled order, an email that cannot be verified), **nothing is changed** and you get an email explaining why, so you can check your bank and set the Status yourself.
 
 **Set it up**
-1. **Forward Interac notices.** In IONOS webmail open the settings for your `Talal.Ali@thequreshico.ca` mailbox and create a **rule/filter**: *if the sender contains `interac.ca`, forward a copy to the Gmail address that owns the script.* Forward only these emails, not your whole mailbox. (Menu names differ slightly between IONOS versions: look for *Rules*, *Filters* or *Forwarding*.) In Gmail, also make a filter *from: interac.ca → Never send to spam*.
+1. **Forward Interac notices.** In IONOS webmail open the settings for your `Talal.Ali@thequreshico.ca` mailbox and create a **rule/filter**: *if the sender contains `interac.ca`, forward a copy to **stalal0164@gmail.com** (the Google account that owns the script).* Forward only these emails, not your whole mailbox. (Menu names differ slightly between IONOS versions: look for *Rules*, *Filters* or *Forwarding*.) In Gmail, also make a filter *from: interac.ca → Never send to spam*.
 2. **Wait for the next e-Transfer notice** (or have a friend send you a small one with a test order number in the message). Check that it arrives in the Gmail inbox.
 3. **Dry run.** In Apps Script run **previewEtransfers** and read the log (View → Logs / Execution log). It lists each Interac email and what the script *would* do, and says whether Gmail confirms the sender. It changes nothing. Google asks you to approve Gmail access the first time.
 4. **Switch it on.** Run **installEtransferSync** once. From then on it checks every 10 minutes. Handled emails get a Gmail label (`QCM-etransfer-done` or `QCM-etransfer-review`).

@@ -44,6 +44,9 @@ const CONFIG = {
   SHIP_SERVICES: ['DOM.RP', 'DOM.EP', 'DOM.XP'], // Regular Parcel, Expedited Parcel, Xpresspost
   MAX_PARCEL_KG: 30,                            // Canada Post limit per parcel
   MAX_QUOTES_PER_HOUR: 600,                     // anti-flood for the shipping calculator
+  ETRANSFER_EMAIL_QUERY: 'from:interac.ca',     // Gmail search for Interac e-Transfer notices that reach the Google account running this script
+  ETRANSFER_LOOKBACK_DAYS: 14,                  // only look at notices from the last two weeks
+  ETRANSFER_REQUIRE_DKIM: true,                 // only trust a notice if Gmail confirms it really came from Interac
   MIN_FORM_MS: 3000                             // an order sent less than 3 seconds after the page opened is a bot
 };
 
@@ -108,8 +111,8 @@ const CATALOG = {
 };
 
 const HEADERS = ['Order #', 'Date', 'Status', 'Name', 'Email', 'Phone', 'Items', 'Total ($)',
-  'Payment method', 'Fulfilment', 'Delivery address', 'Notes', 'Invoice', 'Paid on'];
-const STATUSES = ['Awaiting payment', 'Paid', 'Packed', 'Picked up', 'Delivered', 'Cancelled', 'Refunded'];
+  'Payment method', 'Fulfilment', 'Delivery address', 'Notes', 'Invoice', 'Paid on', 'Packed on', 'Shipped / handed over on', 'Tracking #'];
+const STATUSES = ['Awaiting payment', 'Paid', 'Packed', 'Shipped', 'Picked up', 'Delivered', 'Cancelled', 'Refunded'];
 
 // ---------------- ONE-TIME SETUP ----------------
 /** Run once from the editor: creates the sheet layout and the invoice folder. */
@@ -121,6 +124,7 @@ function setup() {
   sheet.getRange(2, 3, 1000, 1).setDataValidation(rule);
   sheet.getRange(2, 8, 1000, 1).setNumberFormat('0.00');
   colorCodeOrders();
+  setupFulfilmentViews_();
   getFolder_();
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('NEXT_ORDER')) props.setProperty('NEXT_ORDER', String(CONFIG.FIRST_ORDER_NUMBER));
@@ -138,7 +142,7 @@ function colorCodeOrders() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   ss.setSpreadsheetTimeZone(CONFIG.TIME_ZONE); // so "older than 24 hours" is measured in your time
   const sheet = getSheet_();
-  const rows = sheet.getRange('A2:N5000'), status = sheet.getRange('C2:C5000');
+  const rows = sheet.getRange('A2:Q5000'), status = sheet.getRange('C2:C5000');
   const make = (range, formula, bg, font, bold, strike) => {
     const b = SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(formula).setBackground(bg).setRanges([range]);
     if (font) b.setFontColor(font);
@@ -151,7 +155,8 @@ function colorCodeOrders() {
     ['Awaiting payment', '#FFF3CD', '#F5C242', '#33210F', false],
     ['Paid',             '#DDF2E3', '#3FA66A', '#FFFFFF', false],
     ['Packed',           '#DCEBFA', '#5B9BD5', '#FFFFFF', false],
-    ['Picked up',        '#D4F0EE', '#2E9C94', '#FFFFFF', false],
+    ['Shipped',          '#E4E1F7', '#6F63C9', '#FFFFFF', false],
+    ['Picked up',       '#D4F0EE', '#2E9C94', '#FFFFFF', false],
     ['Delivered',        '#D4F0EE', '#2E9C94', '#FFFFFF', false],
     ['Cancelled',        '#ECECEC', '#9E9E9E', '#FFFFFF', true],
     ['Refunded',         '#EBDDF6', '#9B6BC8', '#FFFFFF', false]
@@ -170,6 +175,190 @@ function colorCodeOrders() {
   sheet.setConditionalFormatRules(rules);
   Logger.log('Orders sheet is now colour-coded by status.');
 }
+
+// ---------------- PACKING AND SHIPPING RECORDS ----------------
+const COL = { STATUS: 3, PAID_ON: 14, PACKED_ON: 15, SENT_ON: 16, TRACKING: 17 };
+
+/**
+ * Runs by itself whenever you edit the Orders sheet. When you change a Status it writes the date and time in the
+ * matching column (only if that cell is still empty), so the sheet becomes your record of when each order was
+ * paid, packed and sent. Type the Canada Post tracking number into the Tracking # column yourself.
+ */
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const r = e.range, sheet = r.getSheet();
+    if (sheet.getName() !== CONFIG.SHEET_NAME) return;
+    if (r.getColumn() > COL.STATUS || r.getLastColumn() < COL.STATUS) return; // the edit did not touch Status
+    const stamps = { 'Paid': [COL.PAID_ON], 'Packed': [COL.PACKED_ON], 'Shipped': [COL.PACKED_ON, COL.SENT_ON],
+      'Picked up': [COL.PACKED_ON, COL.SENT_ON], 'Delivered': [COL.PACKED_ON, COL.SENT_ON] };
+    const now = Utilities.formatDate(new Date(), CONFIG.TIME_ZONE, 'yyyy-MM-dd HH:mm');
+    for (let i = 0; i < r.getNumRows(); i++) {
+      const row = r.getRow() + i;
+      if (row < 2) continue;
+      (stamps[String(sheet.getRange(row, COL.STATUS).getValue())] || []).forEach(col => {
+        if (!sheet.getRange(row, col).getValue()) sheet.getRange(row, col).setValue(now);
+      });
+    }
+  } catch (err) { /* never get in the way of an edit */ }
+}
+
+/**
+ * Three live to-do lists, rebuilt whenever setup() runs. They are views of the Orders tab, so you never type in them:
+ * change an order's Status on the Orders tab and it moves to the next list by itself.
+ *   To pack            = Status "Paid"                              (paid, waiting for you to pack it)
+ *   To ship            = Status "Packed"                            (packed, waiting to be posted or handed over)
+ *   Shipped & completed = Status "Shipped", "Picked up" or "Delivered"  (your record of what has gone out)
+ */
+const FULFILMENT_VIEWS = [
+  { tab: 'To pack', empty: 'Nothing to pack right now',
+    note: 'Paid orders waiting to be packed. On the Orders tab set Status to Packed and the order moves to the To ship tab.',
+    headers: ['Order #', 'Date', 'Name', 'Phone', 'Items', 'Fulfilment', 'Delivery address', 'Notes'],
+    query: "select A,B,D,F,G,J,K,L where C = 'Paid' order by B" },
+  { tab: 'To ship', empty: 'Nothing waiting to be shipped right now',
+    note: 'Packed orders waiting to go out. On the Orders tab add the tracking number (column Q) and set Status to Shipped (or Picked up / Delivered).',
+    headers: ['Order #', 'Packed on', 'Name', 'Phone', 'Items', 'Fulfilment', 'Delivery address', 'Notes', 'Tracking #'],
+    query: "select A,O,D,F,G,J,K,L,Q where C = 'Packed' order by O" },
+  { tab: 'Shipped & completed', empty: 'No completed orders yet',
+    note: 'Your record of orders that have gone out. Newest first.',
+    headers: ['Order #', 'Status', 'Name', 'Fulfilment', 'Delivery address', 'Packed on', 'Shipped / handed over on', 'Tracking #', 'Total ($)'],
+    query: "select A,C,D,J,K,O,P,Q,H where C = 'Shipped' or C = 'Picked up' or C = 'Delivered' order by P desc" }
+];
+
+function setupFulfilmentViews_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  FULFILMENT_VIEWS.forEach(v => {
+    const tab = ss.getSheetByName(v.tab) || ss.insertSheet(v.tab);
+    tab.clear();
+    tab.getRange(1, 1, 1, v.headers.length).setValues([v.headers]).setFontWeight('bold');
+    tab.getRange('A2').setFormula('=IFERROR(QUERY(Orders!A2:Q,"' + v.query + '",0),"' + v.empty + '")');
+    tab.setFrozenRows(1);
+    tab.getRange('A2:L500').setWrap(true).setVerticalAlignment('top');
+    tab.getRange(1, v.headers.length + 2).setValue(v.note);
+  });
+}
+
+// ---------------- INTERAC e-TRANSFER AUTO-MATCH ----------------
+/**
+ * Run once: checks for new Interac e-Transfer notices every 10 minutes. It only ever reads emails from Interac that reach
+ * the Google account running this script (see SETUP.md for forwarding them from your business mailbox).
+ */
+function installEtransferSync() {
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'syncEtransfers').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('syncEtransfers').timeBased().everyMinutes(10).create();
+  Logger.log('e-Transfer matching installed: it will run every 10 minutes.');
+}
+
+/**
+ * Finds Interac "sent you money" emails that carry one of your order numbers in the message, and marks that order Paid.
+ * It only marks an order Paid when ALL of these are true: the email is from Interac and Gmail confirms it is genuine,
+ * the order number is in it, the order is still "Awaiting payment" and was meant to be paid by e-Transfer, and the
+ * amount equals the order total. Anything else is left alone and you get an email explaining why.
+ */
+function syncEtransfers() {
+  const doneLabel = gmailLabel_('QCM-etransfer-done'), reviewLabel = gmailLabel_('QCM-etransfer-review');
+  const query = CONFIG.ETRANSFER_EMAIL_QUERY + ' newer_than:' + CONFIG.ETRANSFER_LOOKBACK_DAYS + 'd -label:QCM-etransfer-done -label:QCM-etransfer-review';
+  const threads = GmailApp.search(query, 0, 50);
+  if (!threads.length) return;
+  const sheet = getSheet_();
+  const values = sheet.getDataRange().getValues();
+  threads.forEach(thread => {
+    let outcome = 'done';
+    thread.getMessages().forEach(msg => {
+      let r;
+      try { r = matchEtransfer_(msg, values); } catch (err) { r = { kind: 'review', reason: 'I could not read this email: ' + err.message }; }
+      if (r.kind === 'paid') {
+        markPaid_(sheet, r.rowIndex);
+        values[r.rowIndex][COL.STATUS - 1] = 'Paid'; // so a second email for the same order in this run changes nothing
+      } else if (r.kind === 'review') {
+        try { notifyReview_(msg, r.reason); } catch (err) { console.error('Review email failed: ' + err.message); }
+        outcome = 'review';
+      }
+    });
+    thread.addLabel(outcome === 'review' ? reviewLabel : doneLabel);
+  });
+}
+
+/** Decides what one email means. Returns { kind: 'paid', rowIndex } or { kind: 'review', reason } or { kind: 'ignore' }. */
+function matchEtransfer_(msg, values) {
+  const from = String(msg.getFrom() || ''), subject = String(msg.getSubject() || '');
+  if (!fromInterac_(from)) return { kind: 'ignore' };
+  let text = String(msg.getPlainBody() || '');
+  if (text.replace(/\s/g, '').length < 20) text = String(msg.getBody() || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+  text = text.replace(/\s+/g, ' ');
+
+  const prefix = CONFIG.ORDER_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const found = new RegExp(prefix + '(\\d{3,})', 'i').exec(subject + ' ' + text);
+  const looksLikePayment = /sent you|deposited/i.test(subject);
+  if (!looksLikePayment && !found) return { kind: 'ignore' }; // requests, cancellations, newsletters
+  const amounts = [];
+  text.replace(/\$\s?((?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2})/g, (m, a) => { amounts.push(Number(a.replace(/,/g, ''))); return m; });
+  const money = amounts.length ? ' ($' + amounts[0].toFixed(2) + ')' : '';
+  if (!found) return { kind: 'review', reason: 'An e-Transfer arrived' + money + ' but the message has no order number, so I could not match it to an order.' };
+  if (!looksLikePayment) return { kind: 'review', reason: 'An Interac email mentions order ' + CONFIG.ORDER_PREFIX.toUpperCase() + found[1] + ' but does not look like a payment notice.' };
+
+  const number = CONFIG.ORDER_PREFIX.toUpperCase() + found[1];
+  const idx = values.findIndex((row, i) => i > 0 && String(row[0]).toUpperCase() === number);
+  if (idx < 0) return { kind: 'review', reason: 'An e-Transfer' + money + ' mentions ' + number + ', which is not in the Orders sheet.' };
+  const row = values[idx], status = String(row[COL.STATUS - 1]), total = Number(row[7]), method = String(row[8]);
+  if (['Paid', 'Packed', 'Shipped', 'Picked up', 'Delivered'].indexOf(status) >= 0) return { kind: 'ignore' }; // already handled
+  if (status !== 'Awaiting payment') return { kind: 'review', reason: 'An e-Transfer' + money + ' arrived for ' + number + ', but that order is marked "' + status + '".' };
+  if (!/e-?transfer/i.test(method)) return { kind: 'review', reason: 'An e-Transfer' + money + ' arrived for ' + number + ', but that order was set up to be paid by card.' };
+  if (!amounts.some(a => Math.abs(a - total) < 0.005)) return { kind: 'review', reason: 'An e-Transfer' + money + ' arrived for ' + number + ', but the order total is $' + total.toFixed(2) + '.' };
+  if (CONFIG.ETRANSFER_REQUIRE_DKIM && !interacVerified_(msg.getRawContent())) {
+    return { kind: 'review', reason: 'An e-Transfer' + money + ' for ' + number + ' arrived, but Gmail could not confirm the email genuinely came from Interac (it may be forged, or it was altered when forwarded). Check your bank before shipping.' };
+  }
+  return { kind: 'paid', rowIndex: idx };
+}
+
+/** True only when the sender's address really ends in interac.ca (not "interac.ca.evil.example"). */
+function fromInterac_(from) {
+  const m = /<([^<>]+)>/.exec(String(from || ''));
+  const addr = (m ? m[1] : String(from || '')).trim().toLowerCase();
+  const domain = addr.indexOf('@') >= 0 ? addr.split('@').pop() : '';
+  return domain === 'interac.ca' || /\.interac\.ca$/.test(domain);
+}
+
+/** True when Gmail itself recorded a passing DKIM check for an interac.ca address. A forged email cannot fake Gmail's own header. */
+function interacVerified_(raw) {
+  const head = String(raw || '').split(/\r?\n\r?\n/)[0].replace(/\r?\n[ \t]+/g, ' ');
+  return head.split(/\r?\n/).some(l => /^Authentication-Results:\s*mx\.google\.com/i.test(l) && /\bdkim=pass\b/i.test(l) && /header\.(d|i)=[^\s;]*interac\.ca/i.test(l));
+}
+
+function markPaid_(sheet, index) {
+  const row = index + 1;
+  sheet.getRange(row, COL.STATUS).setValue('Paid');
+  sheet.getRange(row, COL.PAID_ON).setValue(Utilities.formatDate(new Date(), CONFIG.TIME_ZONE, 'yyyy-MM-dd HH:mm'));
+}
+
+function notifyReview_(msg, reason) {
+  MailApp.sendEmail({
+    to: CONFIG.BUSINESS_EMAIL,
+    subject: 'An e-Transfer needs your attention',
+    htmlBody: '<p>' + esc_(reason) + '</p><p>Email: "' + esc_(msg.getSubject()) + '", received ' + esc_(String(msg.getDate())) + '.</p>' +
+      '<p>I did not change anything in the Orders sheet for this email. Please check it, and set the Status yourself if it is right.</p>'
+  });
+}
+
+/**
+ * Safe dry run: reads recent Interac emails and writes to the log what the scanner WOULD do with each one.
+ * It changes nothing (no sheet edits, no labels, no emails). Run it after your first forwarded e-Transfer
+ * notice arrives, then open View > Logs (or Execution log) to read the result.
+ */
+function previewEtransfers() {
+  const threads = GmailApp.search(CONFIG.ETRANSFER_EMAIL_QUERY + ' newer_than:' + CONFIG.ETRANSFER_LOOKBACK_DAYS + 'd', 0, 20);
+  if (!threads.length) { Logger.log('No Interac emails found in the last ' + CONFIG.ETRANSFER_LOOKBACK_DAYS + ' days. Forwarding to this Google account may not be set up yet.'); return; }
+  const values = getSheet_().getDataRange().getValues();
+  threads.forEach(t => t.getMessages().forEach(m => {
+    let r; try { r = matchEtransfer_(m, values); } catch (err) { r = { kind: 'error', reason: err.message }; }
+    const what = r.kind === 'paid' ? 'WOULD MARK ' + values[r.rowIndex][0] + ' AS PAID' : r.kind.toUpperCase() + (r.reason ? ': ' + r.reason : '');
+    Logger.log('"' + m.getSubject() + '" (' + m.getDate() + ') -> ' + what);
+    Logger.log('   Gmail confirms it is from Interac: ' + interacVerified_(m.getRawContent()));
+  }));
+  Logger.log('Preview only. Nothing was changed.');
+}
+
+function gmailLabel_(name) { return GmailApp.getUserLabelByName(name) || GmailApp.createLabel(name); }
 
 /** Optional: run once after adding your Stripe key, to mark card orders Paid automatically every 15 minutes. */
 function installStripeSync() {

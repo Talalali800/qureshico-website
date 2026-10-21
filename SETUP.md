@@ -45,11 +45,50 @@ Run the function **colorCodeOrders** once from the Apps Script editor (pick it i
 | **Red** | Awaiting payment for longer than 24 hours: follow up or cancel |
 | Green | Paid |
 | Blue | Packed |
+| Indigo | Shipped |
 | Teal | Picked up / Delivered |
 | Grey, struck through | Cancelled |
 | Purple | Refunded |
 
-The Status cell is a stronger version of the row colour. Change a row's Status with the dropdown and the colour follows. Card orders turn green by themselves; for Interac e-Transfers, set the Status to **Paid** when the money arrives.
+The Status cell is a stronger version of the row colour. Change a row's Status with the dropdown and the colour follows. Card orders turn green by themselves, and e-Transfers can too with the automatic matching below.
+
+### Packing and shipping workflow (three lists)
+
+An order moves through these statuses, which you change with the dropdown in the **Status** column of the **Orders** tab:
+
+`Awaiting payment` → `Paid` → `Packed` → `Shipped` (or `Picked up` / `Delivered`)
+
+Three tabs show your to-do lists. They are live views of the Orders tab, so you never type in them. Change a Status and the order moves to the next list by itself:
+
+| Tab | Shows orders with Status | What it is for |
+|-----|--------------------------|----------------|
+| **To pack** | Paid | Paid and waiting for you to pack. Shows name, phone, items, pickup/delivery/shipping, address and notes. |
+| **To ship** | Packed | Packed and waiting to be posted or handed over. Shows the packed date and tracking number. |
+| **Shipped & completed** | Shipped, Picked up, Delivered | Your record of everything that has gone out, newest first, with packed date, shipped date and tracking number. |
+
+Dates are written for you in the Orders tab when you change a Status: **Paid on**, **Packed on**, and **Shipped / handed over on**. Type the Canada Post number in the **Tracking #** column (column Q) before you set the order to Shipped.
+
+**After pasting a new `Code.gs`, run `setup` once** (pick it in the function dropdown, click Run). It adds the new columns and the three tabs, updates the Status dropdown and the colours. It is safe to run again. It does not touch your orders or your order-number counter.
+
+### Automatic e-Transfer matching
+
+When a customer pays by Interac e-Transfer, the script can mark their order **Paid** for you. It works like this: your bank/Interac emails you a "sent you money" notice at `Talal.Ali@thequreshico.ca`. A forwarding rule copies **only Interac notices** to the Google account that owns this script (the Gmail where Apps Script runs). Every 10 minutes the script reads those notices and matches them to orders. The script runs in your own Google account and nothing else can read your mailbox.
+
+An order is marked Paid **only when all of these are true**:
+1. The email is from an `interac.ca` address **and Gmail's own check confirms it genuinely came from Interac** (this stops forged emails).
+2. The customer put the order number (like `QCM-1004`) in the e-Transfer message.
+3. That order exists, is still **Awaiting payment**, and was meant to be paid by e-Transfer.
+4. The amount in the email equals the order total.
+
+If anything does not line up (wrong amount, no order number, a payment for a cancelled order, an email that cannot be verified), **nothing is changed** and you get an email explaining why, so you can check your bank and set the Status yourself.
+
+**Set it up**
+1. **Forward Interac notices.** In IONOS webmail open the settings for your `Talal.Ali@thequreshico.ca` mailbox and create a **rule/filter**: *if the sender contains `interac.ca`, forward a copy to the Gmail address that owns the script.* Forward only these emails, not your whole mailbox. (Menu names differ slightly between IONOS versions: look for *Rules*, *Filters* or *Forwarding*.) In Gmail, also make a filter *from: interac.ca → Never send to spam*.
+2. **Wait for the next e-Transfer notice** (or have a friend send you a small one with a test order number in the message). Check that it arrives in the Gmail inbox.
+3. **Dry run.** In Apps Script run **previewEtransfers** and read the log (View → Logs / Execution log). It lists each Interac email and what the script *would* do, and says whether Gmail confirms the sender. It changes nothing. Google asks you to approve Gmail access the first time.
+4. **Switch it on.** Run **installEtransferSync** once. From then on it checks every 10 minutes. Handled emails get a Gmail label (`QCM-etransfer-done` or `QCM-etransfer-review`).
+
+If the dry run says Gmail could **not** confirm the sender for a genuine email, the forwarding changed the message. Ask me to adjust it, or temporarily set `ETRANSFER_REQUIRE_DKIM` to `false` in the settings at the top of `Code.gs` (only if you accept that a forged email could then mark an order Paid).
 
 ### Shipping across Canada with Canada Post (live rates)
 

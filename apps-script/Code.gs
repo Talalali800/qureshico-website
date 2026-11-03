@@ -17,7 +17,7 @@ const CONFIG = {
   BUSINESS_NAME: 'Qureshi & Co.',
   BUSINESS_EMAIL: 'contact@thequreshico.ca',    // questions and replies go here; you also get a copy of every order here
   ETRANSFER_EMAIL: 'Talal.Ali@thequreshico.ca', // where customers send Interac e-Transfers
-  PHONE: '[removed]',
+  PHONE: '',                                    // left blank on purpose: no phone number is shown on invoices or emails. Add one here to show it again.
   CITY: 'Hamilton, Ontario',
   ORDER_PREFIX: 'QCM-',
   FIRST_ORDER_NUMBER: 1001,
@@ -746,7 +746,7 @@ function invoiceHtml_(o) {
     '<td width="60" valign="middle"><img src="' + LOGO_DATA_URI + '" width="44" height="65" alt=""></td>' +
     '<td valign="middle" style="padding-left:6px;"><div style="font-family:' + SERIF + ';font-size:21px;font-weight:bold;color:' + ACCENT + ';">' + esc_(CONFIG.BUSINESS_NAME) + '</div>' +
     '<div style="font-family:' + SANS + ';font-size:10px;color:' + MUTED + ';padding-top:3px;">Canadian maple gifts, carry-on ready<br>' +
-    esc_(CONFIG.CITY) + ' · ' + esc_(CONFIG.BUSINESS_EMAIL) + ' · ' + esc_(CONFIG.PHONE) + '</div></td>' +
+    esc_(CONFIG.CITY) + ' · ' + esc_(CONFIG.BUSINESS_EMAIL) + (CONFIG.PHONE ? ' · ' + esc_(CONFIG.PHONE) : '') + '</div></td>' +
     '<td align="right" valign="middle"><div style="font-family:' + SERIF + ';font-size:30px;letter-spacing:4px;color:' + INK + ';">INVOICE</div>' +
     '<div style="font-family:' + SANS + ';font-size:12px;font-weight:bold;color:' + ACCENT + ';padding-top:4px;">' + esc_(o.number) + '</div></td>' +
     '</tr></table>' +
@@ -790,7 +790,7 @@ function invoiceHtml_(o) {
     '<div style="font-family:' + SERIF + ';font-size:14px;font-style:italic;color:' + ACCENT + ';">Thank you for choosing ' + esc_(CONFIG.BUSINESS_NAME) + '</div>' +
     '<div style="font-family:' + SANS + ';font-size:9px;line-height:14px;color:' + MUTED + ';padding-top:6px;">' +
     'Cancellation: full refund within 48 hours of ordering. After 48 hours, refunds are less a $10 cancellation fee.<br>' +
-    'Questions? ' + esc_(CONFIG.BUSINESS_EMAIL) + ' · ' + esc_(CONFIG.PHONE) + ' · thequreshico.ca</div></td></tr></table>' +
+    'Questions? ' + esc_(CONFIG.BUSINESS_EMAIL) + (CONFIG.PHONE ? ' · ' + esc_(CONFIG.PHONE) : '') + ' · thequreshico.ca</div></td></tr></table>' +
 
     '</td></tr></table></body></html>';
 }
@@ -822,7 +822,7 @@ function emailCustomer_(o, checkoutUrl) {
       '<p>Hi ' + esc_(o.name.split(' ')[0]) + ',</p>' +
       '<p>Thank you for your order. Your order number is <b>' + o.number + '</b>. Your invoice is attached.</p>' +
       '<ul>' + items + '</ul><p><b>Total: $' + o.total.toFixed(2) + '</b></p>' + payBlock + where +
-      '<p>Questions? Reply to this email or call ' + esc_(CONFIG.PHONE) + '.</p>' +
+      '<p>Questions? Reply to this email' + (CONFIG.PHONE ? ' or call ' + esc_(CONFIG.PHONE) : '') + '.</p>' +
       '<p>' + esc_(CONFIG.BUSINESS_NAME) + '</p></div>',
     attachments: [o.pdf]
   });
